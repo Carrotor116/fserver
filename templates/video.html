@@ -1,0 +1,38 @@
+<html>
+<head><title>{{name}}</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/dplayer/1.25.0/DPlayer.min.css">
+    <style>
+    body {
+      text-rendering: auto;
+    }
+    #evanyou-canvas {
+      z-index: -1 !important;
+    }
+    .dplayer-wrap {
+      max-width: 600px;
+      margin: 0 auto;
+      height: 340px;
+    }
+  </style>
+</head>
+<body>
+<div class="dplayer-wrap ">
+    <div id="dplayer" ></div>
+</div>
+{% for j in typejss %}
+<script src="{{j}}"></script>
+{% endfor %}
+<script src="{{typejs}}"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dplayer/1.25.0/DPlayer.min.js"></script>
+<script type="text/javascript">
+    const dp = new DPlayer({
+        container: document.getElementById('dplayer'),
+        screenshot: false,
+        video: {
+            url: '{{url}}',
+            type: '{{type}}'
+        }
+    });
+</script>
+</body>
+</html>

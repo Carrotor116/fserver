@@ -1,8 +1,10 @@
 # fserver
 a simple http.server implement by flask
 
+require: python3 flask
+
 ```
-usage: server.py [-h] [-p PORT] [port]
+usage: python fserver.py [-h] [-p PORT] [port]
 
 positional arguments:
   port                  Specify alternate port [default: 2000]
