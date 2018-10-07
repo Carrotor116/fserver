@@ -155,7 +155,7 @@ def translate_path(path):
     return path
 
 
-if __name__ == '__main__':
+def main():
     port = 2000
     help_str = '''usage: python fserver.py [-h] [port]
 
@@ -175,7 +175,7 @@ if __name__ == '__main__':
 
     try:
         options, args = getopt.getopt(sys.argv[1:], "h", ["help"])
-    except getopt.GetoptError as e :
+    except getopt.GetoptError as e:
         print('error:', e.msg)
         print(help_str)
         sys.exit()
@@ -195,3 +195,7 @@ if __name__ == '__main__':
         host='0.0.0.0',
         port=port,
     )
+
+
+if __name__ == '__main__':
+    main()
