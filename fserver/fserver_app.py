@@ -7,6 +7,8 @@ import posixpath
 import mimetypes
 import sys, getopt
 
+from fserver.util import debug
+
 VIDEO_SUFFIX = ['mp4', 'flv', 'hls', 'dash']
 CDN_JS = {
     'flv': 'https://cdnjs.cloudflare.com/ajax/libs/flv.js/1.4.2/flv.min.js',
@@ -21,7 +23,7 @@ app = Flask(__name__, template_folder='templates')
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
 def get_ls(path):
-    print('get_ls: ', path, [a for a in request.args.values()])
+    debug('get_ls: ', path, [a for a in request.args.values()])
     mod = request.args.get('m', '')
     moda = ''
     if mod != '':
@@ -53,7 +55,7 @@ def get_ls(path):
 
 
 def respond_file(path):
-    print('respond_file:', path)
+    debug('respond_file:', path)
     if os.path.isdir(path):
         return get_ls(path)
     local_path = translate_path(path)
@@ -62,7 +64,7 @@ def respond_file(path):
 
 
 def respond_video(path):
-    print('respond_video:', path)
+    debug('respond_video:', path)
     local_path = translate_path(path)
     if os.path.isdir(local_path):  # 重定向
         return get_ls(path)
@@ -75,7 +77,7 @@ def respond_video(path):
 
 
 def play_video(path):
-    print('play_video:', path)
+    debug('play_video:', path)
     if os.path.isdir(translate_path(path)):
         return get_ls(path)
 
@@ -157,7 +159,7 @@ def translate_path(path):
 
 def main():
     port = 2000
-    help_str = '''usage: python fserver.py [-h] [port]
+    help_str = '''usage: python fserver_app.py [-h] [port]
 
   positional arguments:
     port                  Specify alternate port [default: 2000]
