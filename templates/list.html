@@ -13,5 +13,43 @@
     {% endfor %}
 </ul>
 <hr>
+<h3 id="mode"></h3>
+<script type="text/javascript">
+    let mode = document.getElementById('mode');
+    let par = location.search;
+    url = window.location.href;
+    mode.innerHTML = "<a href=\"javascript:void(0);\" onclick=\"toPlayMode()\" >to play mode</a>";
+    if (par.indexOf("?") !== -1) {
+      par = par.substr(1);
+      let pars = par.split("&");
+      for(let i = 0; i < pars.length; i ++) {
+          if (pars[i] === 'm=p'){
+              mode.innerHTML = "";
+              break;
+          }
+      }
+   }
+   function toPlayMode() {
+       let h = window.location.href;
+       let par = location.search;
+       if (par.indexOf("?") !== -1) {
+           par = par.substr(1);
+           let pars = par.split("&");
+           for(let i = 0; i < pars.length; i ++) {
+               map = pars[i].split("=");
+               if (map[0]==="m"){
+                   map[1] = "p"
+               }
+               pars[i] = map.join("=");
+           }
+           par = pars.join("&");
+           h = h.substr(0,h.indexOf("?"))+"?"+par;
+       }else {
+           h = h+'?m=p'
+       }
+
+       window.location.href = h;
+   }
+</script>
 </body>
 </html>

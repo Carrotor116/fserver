@@ -93,7 +93,7 @@ def play_video(path):
         tjs = CDN_JS.values()
     return render_template('video.html',
                            name=get_filename(path),
-                           url=path + '?m=dv',
+                           url='/' + path + '?m=dv',
                            type=t,
                            typejs=tj,
                            typejss=tjs)

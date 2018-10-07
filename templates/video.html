@@ -13,11 +13,26 @@
       margin: 0 auto;
       height: 340px;
     }
+    .tselect{
+      text-align: center;
+      margin: 45px auto;
+    }
+
   </style>
 </head>
 <body>
 <div class="dplayer-wrap ">
     <div id="dplayer" ></div>
+</div>
+<div class="tselect">
+    <select id="typeSelect" name="typeSelect" >
+        <option value="mp4">mp4</option>
+        <option value="flv">flv</option>
+        <option value="hls">hls</option>
+        <option value="dash">dash</option>
+        <option value="auto">auto</option>
+    </select>
+    <button onclick="changeType()" >change type</button>
 </div>
 {% for j in typejss %}
 <script src="{{j}}"></script>
@@ -34,5 +49,14 @@
         }
     });
 </script>
+<script type="text/javascript">
+		function changeType(){
+		    let tSelect = document.getElementById('typeSelect');
+            let val = tSelect.options[tSelect.selectedIndex].value;
+            let ind = window.location.href.indexOf('?');
+            let url = window.location.href.substr(0, ind);
+            window.location.href = url + '?m=p&t=' + val;
+		}
+ </script>
 </body>
 </html>
