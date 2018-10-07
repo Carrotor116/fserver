@@ -156,30 +156,35 @@ def translate_path(path):
 
 
 if __name__ == '__main__':
+    port = 2000
+    help_str = '''usage: python fserver.py [-h] [port]
+
+  positional arguments:
+    port                  Specify alternate port [default: 2000]
+
+  optional arguments:
+    -h, --help            show this help message and exit
+
+  arguments of url:
+    m                     get_arg to set the mode of processing method of file
+                          Such as http://localhost:port?m=dv to download the file specified by url
+                          value 'p' to play file with Dplayer
+                          value 'v' to show the file specified by url
+                          value 'dv' to download the file specified by url
+ '''
 
     try:
         options, args = getopt.getopt(sys.argv[1:], "h", ["help"])
-    except getopt.GetoptError:
+    except getopt.GetoptError as e :
+        print('error:', e.msg)
+        print(help_str)
         sys.exit()
 
-    help_str = '''usage: python fserver.py [-h] [-p PORT] [port]
-
-positional arguments:
-  port                  Specify alternate port [default: 2000]
-
-optional arguments:
-  -h, --help            show this help message and exit
-
-arguments of url:
-  m                     get_arg to set the mode of processing method of file
-                        Such as http://localhost:port?m=dv to download the file specified by url
-                        value 'p' to play file with Dplayer
-                        value 'v' to show the file specified by url
-                        value 'dv' to download the file specified by url
- '''
-    port = 2000
     if len(args) > 0:
         port = args[0]
+        if not port.isdigit():
+            print('error: port must be int, input:', port)
+            sys.exit()
 
     for name, value in options:
         if name in ['-h', '--help']:
