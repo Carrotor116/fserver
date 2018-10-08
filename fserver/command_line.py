@@ -63,7 +63,6 @@ def run_fserver():
         ips = util.get_ip_v4()
         for _ip in ips:
             print('  %s:%s' % (_ip, port))
-        print('  127.0.0.1:%s' % port)
     else:
         print('  %s:%s' % (ip, port))
 
