@@ -23,7 +23,7 @@
       par = par.substr(1);
       let pars = par.split("&");
       for(let i = 0; i < pars.length; i ++) {
-          if (pars[i] === 'm=p'){
+          if (pars[i] === 'm=play'){
               mode.innerHTML = "";
               break;
           }
@@ -45,7 +45,7 @@
            par = pars.join("&");
            h = h.substr(0,h.indexOf("?"))+"?"+par;
        }else {
-           h = h+'?m=p'
+           h = h+'?m=play'
        }
 
        window.location.href = h;

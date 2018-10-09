@@ -1,9 +1,10 @@
 from setuptools import setup
-import fserver
+
+from fserver import conf
 
 setup(
     name='fserver',
-    version=fserver._VERSION,
+    version=conf.VERSION,
     description='a simple http.server implement by flask',
     url='https://github.com/Carrotor116/fserver',
     author='Nonu',

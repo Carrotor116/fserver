@@ -1,5 +1,5 @@
 # fserver
-a simple http.server implement by flask and gevent
+a simple http.server implement with flask and gevent
 
 
 ### install 

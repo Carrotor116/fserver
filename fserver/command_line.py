@@ -1,11 +1,11 @@
+import getopt
 import sys
 
 from gevent.pywsgi import WSGIServer
-import getopt
 
-import fserver
-from fserver.fserver_app import app as application
+from fserver import conf
 from fserver import util
+from fserver.fserver_app import app as application
 
 help_str_short = 'usage: fserver [-h] [-d] [--ip ADDRESS] [port]'
 help_str = '''usage: fserver [-h] [-d] [--ip ADDRESS] [port]
@@ -56,7 +56,7 @@ def run_fserver():
         if name in ['-i', '--ip']:
             ip = value
         if name in ['-v', '--version']:
-            print('fserver', fserver._VERSION)
+            print('fserver', conf.VERSION)
 
     print('fserver is available at following address:')
     if ip == '0.0.0.0':

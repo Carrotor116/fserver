@@ -1,34 +1,51 @@
+import getopt
+import mimetypes
+import os
+import posixpath
+import sys
+import urllib
+
 from flask import Flask
 from flask import render_template, request
-from flask import make_response, send_from_directory, send_file
-import os
-import urllib
-import posixpath
-import mimetypes
-import sys, getopt
+from flask import send_from_directory
 
+from fserver.conf import CDN_JS
+from fserver.conf import GetArg
+from fserver.conf import VIDEO_SUFFIX
 from fserver.util import debug
-
-VIDEO_SUFFIX = ['mp4', 'flv', 'hls', 'dash']
-CDN_JS = {
-    'flv': 'https://cdnjs.cloudflare.com/ajax/libs/flv.js/1.4.2/flv.min.js',
-    'hls': 'https://cdn.jsdelivr.net/npm/hls.js@latest',
-    'dash': 'https://cdnjs.cloudflare.com/ajax/libs/dashjs/2.9.1/dash.all.min.js',
-    'mp4': ''
-}
 
 app = Flask(__name__, template_folder='templates')
 
 
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
-def get_ls(path):
+def do_get(path):
     debug('get_ls: ', path, [a for a in request.args.values()])
-    mod = request.args.get('m', '')
-    moda = ''
-    if mod != '':
-        moda = '?m=' + mod
+    arg = GetArg(request.args)
     local_path = translate_path(path)
+
+    if os.path.isdir(local_path):  # 目录
+        return list_dir(path)
+    elif os.path.exists(local_path):  # 非目录
+        if arg.mode is None or arg.mode == GetArg.MODE_NORMAL:
+            if get_suffix(path) in VIDEO_SUFFIX:
+                return play_video(path)
+            else:
+                return respond_file(path)
+        elif arg.mode == GetArg.MODE_TXT:
+            return respond_file(path, mime='text/plain')
+        elif arg.mode == GetArg.MODE_DOWN:
+            return respond_file(path, as_attachment=True)
+        elif arg.mode == GetArg.MODE_VIDEO:
+            return play_video(path)
+
+    return render_template('error.html', error='No such dir or file: ' + path)
+
+
+def list_dir(path):
+    debug('list_dir', path)
+    local_path = translate_path(path)
+    arg = GetArg(request.args)
     if os.path.isdir(local_path):  # 目录
         lst = os.listdir(local_path)
         for i, l in enumerate(lst):
@@ -36,66 +53,45 @@ def get_ls(path):
                 lst[i] += '/'
         return render_template('list.html',
                                path=path,
-                               arg=moda,
+                               arg=arg.format_for_url(),
                                list=lst)
-    elif os.path.exists(local_path):  # 非目录
-        try:
-            suffix = get_suffix(path)
-
-            if mod == 'dv':  # down video
-                return respond_video(path)
-            elif suffix in VIDEO_SUFFIX or mod == 'p':  # 播放视频
-                return play_video(path)
-            else:  # mod = 'd' # down file
-                return respond_file(path)
-        except Exception as e:
-            return render_template('error.html', error=e)
-
-    return render_template('error.html', error='No such dir or file: ' + path)
 
 
-def respond_file(path):
+def respond_file(path, mime=None, as_attachment=False):
     debug('respond_file:', path)
     if os.path.isdir(path):
-        return get_ls(path)
+        return do_get(path)
     local_path = translate_path(path)
-    type = mimetypes.guess_type(local_path)[0]
-    return send_file(local_path, mimetype=type)
+    if mime is None or mime not in mimetypes.types_map.values():  # mime 无效
+        mime = mimetypes.guess_type(local_path)[0]
+        if mime is None:  # 无法获取类型，默认使用 text/plain
+            mime = 'text/plain'
 
-
-def respond_video(path):
-    debug('respond_video:', path)
-    local_path = translate_path(path)
-    if os.path.isdir(local_path):  # 重定向
-        return get_ls(path)
-
-    filename = get_filename(path)
-    ppath = get_parent_path(local_path)
-    response = make_response(send_from_directory(ppath, filename, as_attachment=True))
-    response.headers["Content-Disposition"] = "attachment; filename={}".format(filename.encode().decode('latin-1'))
-    return response
+    return send_from_directory(get_parent_path(local_path),
+                               get_filename(local_path),
+                               mimetype=mime,
+                               as_attachment=as_attachment)
 
 
 def play_video(path):
     debug('play_video:', path)
     if os.path.isdir(translate_path(path)):
-        return get_ls(path)
+        return do_get(path)
 
-    t = request.args.get('t')
+    arg = GetArg(request.args)
     suffix = get_suffix(path)
-    if suffix in VIDEO_SUFFIX:
-        t = suffix
-    elif t is None or t == '':
-        t = 'auto'
+    t = suffix if arg.play is None else arg.play
+
     try:
         tj = CDN_JS[t]
         tjs = []
-    except:
+    except Exception as e:
+        debug(e)
         tj = ''
         tjs = CDN_JS.values()
     return render_template('video.html',
                            name=get_filename(path),
-                           url='/' + path + '?m=dv',
+                           url='/%s?%s=%s' % (path, GetArg.ARG_MODE, GetArg.MODE_DOWN),
                            type=t,
                            typejs=tj,
                            typejss=tjs)
@@ -104,10 +100,12 @@ def play_video(path):
 def get_filename(path):
     try:
         return path[path.rindex('/') + 1:]
-    except:
+    except Exception as e:
+        debug(e)
         try:
             return path[path.rindex('\\') + 1:]
-        except:
+        except Exception as e2:
+            debug(e2)
             return path
 
 
@@ -115,14 +113,16 @@ def get_parent_path(path):
     try:
         filename = get_filename(path)
         return path[:path.rindex(filename)]
-    except:
+    except Exception as e:
+        debug(e)
         return ''
 
 
 def get_suffix(path):
     try:
         return path[path.rindex('.') + 1:]
-    except:
+    except Exception as e:
+        debug(e)
         return ''
 
 
