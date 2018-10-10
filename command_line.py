@@ -1,3 +1,4 @@
+# -*- coding: latin-1 -*-
 import getopt
 import sys
 
@@ -35,7 +36,7 @@ def run_fserver():
     # init conf
     ip = '0.0.0.0'
     port = 2000
-    util.DEBUG = False
+    conf.DEBUG = False
 
     if len(args) > 0:
         port = args[0]
@@ -48,7 +49,7 @@ def run_fserver():
             print(help_str)
             sys.exit()
         if name in ['-d', '--debug']:
-            util.DEBUG = True
+            conf.DEBUG = True
         if name in ['-i', '--ip']:
             ip = value
         if name in ['-v', '--version']:

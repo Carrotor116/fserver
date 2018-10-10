@@ -3,6 +3,8 @@ from fserver.util import debug
 VERSION = '0.0.6'
 BUILD_TIME = '2018/10/11'
 
+DEBUG = True
+
 VIDEO_SUFFIX = ['mp4', 'flv', 'hls', 'dash']
 CDN_JS = {
     'flv': 'https://cdnjs.cloudflare.com/ajax/libs/flv.js/1.4.2/flv.min.js',

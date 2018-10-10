@@ -1,6 +1,5 @@
+# -*- coding: latin-1 -*-
 import os
-
-DEBUG = True
 
 
 def debug(*args, sep=' ', end='\n', file=None):
