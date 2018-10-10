@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 import os
+from fserver import conf
 
 
 def debug(*args, sep=' ', end='\n', file=None):
-    if DEBUG:
+    if conf.DEBUG:
         print(*args, sep=sep, end=end, file=file)
 
 
