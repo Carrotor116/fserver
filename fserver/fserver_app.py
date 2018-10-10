@@ -1,4 +1,4 @@
-# -*- coding: latin-1 -*-
+# -*- coding: utf-8 -*-
 import getopt
 import mimetypes
 import os
@@ -17,6 +17,10 @@ from fserver.util import debug
 
 app = Flask(__name__, template_folder='templates')
 
+if sys.version_info < (3, 4):
+    reload(sys)
+    sys.setdefaultencoding("gbk")
+
 
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
@@ -25,9 +29,9 @@ def do_get(path):
     arg = GetArg(request.args)
     local_path = translate_path(path)
 
-    if os.path.isdir(local_path):  # ??
+    if os.path.isdir(local_path):  # 目录
         return list_dir(path)
-    elif os.path.exists(local_path):  # ???
+    elif os.path.exists(local_path):  # 非目录
         if arg.mode is None or arg.mode == GetArg.MODE_NORMAL:
             if get_suffix(path) in VIDEO_SUFFIX:
                 return play_video(path)
@@ -47,7 +51,7 @@ def list_dir(path):
     debug('list_dir', path)
     local_path = translate_path(path)
     arg = GetArg(request.args)
-    if os.path.isdir(local_path):  # ??
+    if os.path.isdir(local_path):  # 目录
         lst = os.listdir(local_path)
         for i, l in enumerate(lst):
             if os.path.isdir('/'.join([local_path, l])):
@@ -63,9 +67,9 @@ def respond_file(path, mime=None, as_attachment=False):
     if os.path.isdir(path):
         return do_get(path)
     local_path = translate_path(path)
-    if mime is None or mime not in mimetypes.types_map.values():  # mime ??
+    if mime is None or mime not in mimetypes.types_map.values():  # mime 无效
         mime = mimetypes.guess_type(local_path)[0]
-        if mime is None:  # ??????????? text/plain
+        if mime is None:  # 无法获取类型，默认使用 text/plain
             mime = 'text/plain'
 
     return send_from_directory(get_parent_path(local_path),
@@ -142,8 +146,8 @@ def translate_path(path):
     trailing_slash = path.rstrip().endswith('/')
     try:
         path = urllib.parse.unquote(path, errors='surrogatepass')
-    except UnicodeDecodeError:
-        path = urllib.parse.unquote(path)
+    except Exception:
+        path = urllib.unquote(path)
     path = posixpath.normpath(path)
     words = path.split('/')
     words = filter(None, words)

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from fserver.util import debug
 
 VERSION = '0.0.6'
