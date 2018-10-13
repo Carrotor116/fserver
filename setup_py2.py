@@ -18,7 +18,7 @@ setup(
     author='Nonu',
     author_email='1162365377@qq.com',
     license='MIT',
-    packages=['fserver', 'fserver_py2'],
+    packages=['fserver'],
     install_requires=['Flask >= 1.0.2', 'gevent >= 1.3.6'],
     package_data={
         '': ['templates/*.html', 'LICENSE', 'README.md']
