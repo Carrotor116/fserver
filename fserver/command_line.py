@@ -10,7 +10,7 @@ from fserver.fserver_app import app as application
 
 help_str_short = 'usage: fserver [-h] [-d] [--ip ADDRESS] [port]'
 help_str = '''
-Uasge:
+Usage:
   fserver [-h] [-d] [--ip ADDRESS] [port]
 
 Positional arguments:
@@ -30,7 +30,7 @@ def run_fserver():
         options, args = getopt.getopt(sys.argv[1:], 'hdvi:', ['help', 'debug', 'version', 'ip='])
     except getopt.GetoptError as e:
         print(help_str_short)
-        print('error:', e.msg)
+        print('error: %s' % e.msg)
         sys.exit()
 
     # init conf
@@ -41,7 +41,7 @@ def run_fserver():
     if len(args) > 0:
         port = args[0]
         if not port.isdigit():
-            print('error: port must be int, input:', port)
+            print('error: port must be int, input: %s' % port)
             sys.exit()
 
     for name, value in options:
@@ -53,8 +53,8 @@ def run_fserver():
         if name in ['-i', '--ip']:
             ip = value
         if name in ['-v', '--version']:
-            print('fserver', conf.VERSION, 'build at', conf.BUILD_TIME)
-            print('Python', sys.version)
+            print('fserver %s build at %s' % (conf.VERSION, conf.BUILD_TIME))
+            print('Python %s' % sys.version)
             sys.exit()
 
     print('fserver is available at following address:')

@@ -1,11 +1,23 @@
 # -*- coding: utf-8 -*-
+from __future__ import print_function
+
 import os
+
 from fserver import conf
 
 
-def debug(*args, sep=' ', end='\n', file=None):
+def debug(*args):
     if conf.DEBUG:
-        print(*args, sep=sep, end=end, file=file)
+        min_len = 40
+        msg = ''
+        for i in args:
+            msg += str(i)
+        msg = '| ' + msg.replace('\n', '\n| ')
+        ln = max([len(i)+3 for i in msg.split('\n')])
+        ln = ln if ln > min_len else min_len
+        print('_' * ln)
+        print(msg)
+        print('=' * ln)
 
 
 def _get_ip_v4_ipconfig():
@@ -16,13 +28,14 @@ def _get_ip_v4_ipconfig():
         if '127.0.0.1' not in ips:
             ips.append('127.0.0.1')
     except Exception as e:
-        debug(e)
+        debug(e.message)
     return ips
 
 
 def _get_ip_v4_ifconfig():
     ips = []
-    sh = r"""ifconfig 2>&1 | awk 'BEGIN{print "succeed"}/inet /{print $2}' 2>&1"""
+    sh = r"""ifconfig 2>&1 | \
+    awk -F '[ :]' 'BEGIN{print "succeed"}/inet /{ for (i=1;i<=NF;i++){ if ($i~/[0-9]\./) {print $i;break }} }' 2>&1 """
     try:
         ip_cmd = os.popen(sh).read()
         if 'succeed' in ip_cmd:
@@ -30,14 +43,13 @@ def _get_ip_v4_ifconfig():
         if '127.0.0.1' not in ips:
             ips.append('127.0.0.1')
     except Exception as e:
-        debug(e)
+        debug(e.message)
     return ips
 
 
 def _get_ip_v4_ip_add():
     ips = []
-    sh = r"""ip -4 add 2>&1 | \
-           awk 'BEGIN{print"succeed"}/[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}..[0-9]{1,3}/{print $2}' 2>&1"""
+    sh = r"""ip -4 add 2>&1 |awk 'BEGIN{print "succeed"} $2 ~/^[0-9]+\./ {print $2}' | awk -F/ '{print $1}'"""
     try:
         ip_cmd = os.popen(sh).read()
         if 'succeed' in ip_cmd:

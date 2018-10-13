@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import getopt
 import mimetypes
 import os
 import posixpath
@@ -10,8 +9,8 @@ from flask import Flask
 from flask import render_template, request
 from flask import send_from_directory
 
+from fserver import GetArg
 from fserver.conf import CDN_JS
-from fserver.conf import GetArg
 from fserver.conf import VIDEO_SUFFIX
 from fserver.util import debug
 
@@ -160,49 +159,3 @@ def translate_path(path):
     if trailing_slash:
         path += '/'
     return path
-
-
-def main():
-    port = 2000
-    help_str = '''usage: python fserver_app.py [-h] [port]
-
-  positional arguments:
-    port                  Specify alternate port [default: 2000]
-
-  optional arguments:
-    -h, --help            show this help message and exit
-
-  arguments of url:
-    m                     get_arg to set the mode of processing method of file
-                          Such as http://localhost:port?m=dv to download the file specified by url
-                          value 'p' to play file with Dplayer
-                          value 'v' to show the file specified by url
-                          value 'dv' to download the file specified by url
- '''
-
-    try:
-        options, args = getopt.getopt(sys.argv[1:], "h", ["help"])
-    except getopt.GetoptError as e:
-        print('error:', e.msg)
-        print(help_str)
-        sys.exit()
-
-    if len(args) > 0:
-        port = args[0]
-        if not port.isdigit():
-            print('error: port must be int, input:', port)
-            sys.exit()
-
-    for name, value in options:
-        if name in ['-h', '--help']:
-            print(help_str)
-            sys.exit()
-
-    app.run(
-        host='0.0.0.0',
-        port=port,
-    )
-
-
-if __name__ == '__main__':
-    main()
