@@ -21,7 +21,7 @@ setup(
     packages=['fserver'],
     install_requires=['Flask >= 1.0.2', 'gevent >= 1.3.6'],
     package_data={
-        '': ['templates/*.html', 'LICENSE', 'README.md']
+        '': ['templates/*.html', 'static/*']
     },
     entry_points={
         'console_scripts': [

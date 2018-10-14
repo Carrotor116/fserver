@@ -1,6 +1,3 @@
-from fserver.util import debug
-
-
 class GetArg:
     ARG_MODE = 'm'
     ARG_PLAY = 'p'
@@ -25,7 +22,6 @@ class GetArg:
             self.resolve_arg(request_arg)
 
     def resolve_arg(self, request_arg):
-        debug('resolve_arg:', request_arg)
         self.mode = request_arg.get(self.ARG_MODE, default=None)
         if self.mode is not None and self.mode not in self.MODES:
             self.mode = self.MODE_NORMAL
@@ -45,3 +41,11 @@ class GetArg:
             return '?' + '&'.join(args)
         else:
             return ''
+
+    def to_dict(self):
+        res = {}
+        if self.mode is not None:
+            res[GetArg.ARG_MODE] = self.mode
+        if self.play is not None:
+            res[GetArg.ARG_PLAY] = self.play
+        return res

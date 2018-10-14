@@ -18,6 +18,7 @@
         .mode-btn:disabled{
             background-color: rgba(133, 133, 255, 0.36);
         }
+        {% if upload %}
         .file {
             position: relative;
             display: inline-block;
@@ -39,6 +40,7 @@
             left: 0;
             opacity: 0;
         }
+        {% endif %}
     </style>
 </head>
 <body>
@@ -112,6 +114,7 @@
    }
 </script>
 
+{% if upload %}
 <div style="margin-left: 30px; margin-right: 30px">
     <a href="javascript:void(0);" class="file" >选择文件<input type="file" name="file" id="file" multiple="multiple"/></a>
     <a href="javascript:void(0);" class="file" style="float: right" onclick="upload_file()" >上传</a>
@@ -119,9 +122,11 @@
 <div>
     <ul id="file_ul"></ul>
 </div>
+{#    the js for upload #}
 <script type="text/javascript">
     let file_ele = document.getElementById('file');
     let file_ul = document.getElementById('file_ul');
+    let empty_file_list = file_ele.files;
     let file_map = new Map();
     file_ele.addEventListener('change', function () {
         let tmp_files = file_ele.files;
@@ -129,8 +134,9 @@
             for (let i = 0; i < tmp_files.length; i++) {
                 file_map.set(ftoa(tmp_files[i]), {'fobj':tmp_files[i],'state':0}); // state completed=1,wait=0,error=-1，ing=2
             }
-            update_ul();
         }
+        file_ele.files = empty_file_list;
+        update_ul();
     });
     function del_file(key) {//key is the base64 of file object
         file_map.set(key, '');
@@ -187,7 +193,7 @@
     }
     function ftoa(f) {
         let s = '';
-        for (i in f) {
+        for (let i in f) {
             s = s+f[i];
         }
         return window.btoa(window.encodeURIComponent(s));
@@ -232,7 +238,7 @@
         }
         return true
     }
-    function upload_complete(evt, id) {
+    function upload_complete(evt) {
         file_map.get(this.custom_file_key)['state'] = 1;
         update_ul();
         console.log('upload_completed', 'id is', this.custom_file_name);
@@ -253,5 +259,6 @@
         update_ul();
     }
 </script>
+{% endif %}
 </body>
 </html>

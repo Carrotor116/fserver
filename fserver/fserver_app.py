@@ -5,11 +5,13 @@ import posixpath
 import sys
 import urllib
 
-from flask import Flask
-from flask import render_template, request
+from flask import Flask, request, redirect, jsonify
+from flask import render_template
 from flask import send_from_directory
+from werkzeug.utils import secure_filename
 
 from fserver import GetArg
+from fserver import conf
 from fserver.conf import CDN_JS
 from fserver.conf import VIDEO_SUFFIX
 from fserver.util import debug
@@ -21,11 +23,11 @@ if sys.version_info < (3, 4):
     sys.setdefaultencoding("gbk")
 
 
-@app.route('/', defaults={'path': ''})
-@app.route('/<path:path>')
+@app.route('/', defaults={'path': ''}, methods=['GET'])
+@app.route('/<path:path>', methods=['GET'])
 def do_get(path):
-    debug('get_ls: ', path, [a for a in request.args.values()])
     arg = GetArg(request.args)
+    debug('get_ls: path %s,' % path, 'arg is', arg.to_dict())
     local_path = translate_path(path)
 
     if os.path.isdir(local_path):  # 目录
@@ -46,6 +48,32 @@ def do_get(path):
     return render_template('error.html', error='No such dir or file: ' + path)
 
 
+@app.route('/', defaults={'path': ''}, methods=['POST'])
+@app.route('/<path:path>', methods=['POST'])
+def do_post(path):
+    debug('post_path: %s' % path)
+    if not conf.UPLOAD:
+        return redirect(request.url)
+    try:
+        if 'file' not in request.files:
+            debug('do_post: No file in request')
+            return redirect(request.url)
+        else:
+            request_file = request.files['file']
+            filename = secure_filename(request_file.filename)
+            local_path = os.path.join(translate_path(path), filename)
+            if os.path.exists(local_path):
+                if not conf.UPLOAD_OVERRIDE_MODE:
+                    local_path = plus_filename(local_path)
+            request_file.save(local_path)
+            debug('save file to: %s' % local_path)
+            res = {'operation': 'upload_file', 'state': 'succeed', 'filename': request_file.filename}
+            return jsonify(**res)
+    except Exception as e:
+        debug('do_post (error): ', e.message)
+        return render_template('error.html', error=e.message)
+
+
 def list_dir(path):
     debug('list_dir', path)
     local_path = translate_path(path)
@@ -56,6 +84,7 @@ def list_dir(path):
             if os.path.isdir('/'.join([local_path, l])):
                 lst[i] += '/'
         return render_template('list.html',
+                               upload=conf.UPLOAD,
                                path=path,
                                arg=arg.format_for_url(),
                                list=lst)
@@ -90,7 +119,7 @@ def play_video(path):
         tj = CDN_JS[t]
         tjs = []
     except Exception as e:
-        debug(e)
+        debug('play_video (error):', e, 't:', t)
         tj = ''
         tjs = CDN_JS.values()
     return render_template('video.html',
@@ -103,14 +132,11 @@ def play_video(path):
 
 def get_filename(path):
     try:
-        return path[path.rindex('/') + 1:]
+        ind_1 = path.rindex(os.sep)
+        return path[ind_1 + 1:] if ind_1 >= 0 else path
     except Exception as e:
-        debug(e)
-        try:
-            return path[path.rindex('\\') + 1:]
-        except Exception as e2:
-            debug(e2)
-            return path
+        debug('get_filename (error):', e, ', path:', path)
+        return path
 
 
 def get_parent_path(path):
@@ -118,7 +144,7 @@ def get_parent_path(path):
         filename = get_filename(path)
         return path[:path.rindex(filename)]
     except Exception as e:
-        debug(e)
+        debug('get_parent_path (error)', e)
         return ''
 
 
@@ -126,8 +152,21 @@ def get_suffix(path):
     try:
         return path[path.rindex('.') + 1:]
     except Exception as e:
-        debug(e)
+        debug('get_suffix (error):', e)
         return ''
+
+
+def plus_filename(filename):
+    ind = filename.rindex('.')
+    suffix = get_suffix(filename)
+    prefix = filename[:ind] if ind > 0 else filename
+    i = 0
+    while True:
+        i += 1
+        res = prefix + '(' + str(i) + ')'
+        res = res + '.' + suffix if suffix != '' else res
+        if not os.path.exists(res):
+            return res
 
 
 def translate_path(path):

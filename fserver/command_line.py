@@ -8,26 +8,29 @@ from fserver import conf
 from fserver import util
 from fserver.fserver_app import app as application
 
-help_str_short = 'usage: fserver [-h] [-d] [--ip ADDRESS] [port]'
+help_str_short = 'usage: fserver [-h] [-d] [-u] [-o] [-u] [-o] [-i ADDRESS] [port]'
 help_str = '''
 Usage:
-  fserver [-h] [-d] [--ip ADDRESS] [port]
+  fserver [-h] [-d] [-u] [-o] [-i ADDRESS] [port]
 
 Positional arguments:
   port                  Specify alternate port [default: 2000]
 
 Optional arguments:
-  -h, --help            show this help message and exit
-  -d, --debug           use debug mode of fserver
+  -d, --debug           Use debug mode of fserver
+  -h, --help            Show this help message and exit
   -i ADDRESS, --ip ADDRESS,
                         Specify alternate bind address [default: all interfaces]
+  -o, --override        Set upload file with override mode, only valid when [-u] is used
+  -u, --upload          Open upload file function. This function is closed by default
 
  '''
 
 
 def run_fserver():
     try:
-        options, args = getopt.getopt(sys.argv[1:], 'hdvi:', ['help', 'debug', 'version', 'ip='])
+        options, args = getopt.getopt(sys.argv[1:], 'hdvi:uo',
+                                      ['help', 'debug', 'version', 'ip=', 'upload', 'override'])
     except getopt.GetoptError as e:
         print(help_str_short)
         print('error: %s' % e.msg)
@@ -36,7 +39,6 @@ def run_fserver():
     # init conf
     ip = '0.0.0.0'
     port = 2000
-    conf.DEBUG = False
 
     if len(args) > 0:
         port = args[0]
@@ -50,8 +52,16 @@ def run_fserver():
             sys.exit()
         if name in ['-d', '--debug']:
             conf.DEBUG = True
+            continue
         if name in ['-i', '--ip']:
             ip = value
+            continue
+        if name in ['-u', '--upload']:
+            conf.UPLOAD = True
+            continue
+        if name in ['-o', '--override']:
+            conf.UPLOAD_OVERRIDE_MODE = True
+            continue
         if name in ['-v', '--version']:
             print('fserver %s build at %s' % (conf.VERSION, conf.BUILD_TIME))
             print('Python %s' % sys.version)

@@ -11,9 +11,9 @@ def debug(*args):
         min_len = 40
         msg = ''
         for i in args:
-            msg += str(i)
+            msg += str(i) + ' '
         msg = '| ' + msg.replace('\n', '\n| ')
-        ln = max([len(i)+3 for i in msg.split('\n')])
+        ln = max([len(i) + 3 for i in msg.split('\n')])
         ln = ln if ln > min_len else min_len
         print('_' * ln)
         print(msg)
