@@ -12,5 +12,3 @@ CDN_JS = {
     'dash': 'https://cdnjs.cloudflare.com/ajax/libs/dashjs/2.9.1/dash.all.min.js',
     'mp4': ''
 }
-
-

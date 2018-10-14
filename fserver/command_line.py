@@ -61,7 +61,7 @@ def run_fserver():
     if ip == '0.0.0.0':
         ips = util.get_ip_v4()
         for _ip in ips:
-            print('  %s:%s' % (_ip, port))
+            print('  http://%s:%s' % (_ip, port))
     else:
         print('  %s:%s' % (ip, port))
 

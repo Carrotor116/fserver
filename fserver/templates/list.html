@@ -18,6 +18,27 @@
         .mode-btn:disabled{
             background-color: rgba(133, 133, 255, 0.36);
         }
+        .file {
+            position: relative;
+            display: inline-block;
+            background: #78b6ff;
+            border-radius: 2px;
+            padding: 8px 12px;
+            overflow: hidden;
+            color: white;
+            text-decoration: none;
+            text-indent: 0;
+        }
+        .file input {
+            position: absolute;
+            font-size: 16px;
+            right: 0;
+            font-weight: bold;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            opacity: 0;
+        }
     </style>
 </head>
 <body>
@@ -89,6 +110,148 @@
             }
         }
    }
+</script>
+
+<div style="margin-left: 30px; margin-right: 30px">
+    <a href="javascript:void(0);" class="file" >选择文件<input type="file" name="file" id="file" multiple="multiple"/></a>
+    <a href="javascript:void(0);" class="file" style="float: right" onclick="upload_file()" >上传</a>
+</div>
+<div>
+    <ul id="file_ul"></ul>
+</div>
+<script type="text/javascript">
+    let file_ele = document.getElementById('file');
+    let file_ul = document.getElementById('file_ul');
+    let file_map = new Map();
+    file_ele.addEventListener('change', function () {
+        let tmp_files = file_ele.files;
+        if (tmp_files.length > 0){
+            for (let i = 0; i < tmp_files.length; i++) {
+                file_map.set(ftoa(tmp_files[i]), {'fobj':tmp_files[i],'state':0}); // state completed=1,wait=0,error=-1，ing=2
+            }
+            update_ul();
+        }
+    });
+    function del_file(key) {//key is the base64 of file object
+        file_map.set(key, '');
+        update_ul();
+    }
+    function update_ul() {
+        let str ='';
+        for(let pair of file_map){
+            let k = pair[0];
+            let f = pair[1];
+            if (!is_empty(f)){
+                let fobj = f['fobj'];
+                let state = f['state'];
+                if (state === 1){ // completed
+                     str += '<li id=li_\''+k+'\'>' +
+                        '<div style="margin-right:35px">' +
+                        '<a style="margin-right:15px;" href="javascript:void(0);" onclick="del_file(\''+k+'\')"> remove</a>' +
+                        '<span>'+fobj.name +'</span>' +
+                        '<span style="float:right;color:#8ADE1F">completed</span>' +
+                        '<div>' +
+                        '</li>';
+                } else if (state === 0) { // wait
+                    str += '<li id=li_\''+k+'\'>' +
+                        '<div style="margin-right:35px">' +
+                        '<a style="margin-right:15px;" href="javascript:void(0);" onclick="del_file(\''+k+'\')"> remove</a>' +
+                        '<span>'+fobj.name +'</span>' +
+                        '<span style="float:right;">wait</span>' +
+                        '<div>' +
+                        '</li>';
+                }else if (state === -1) {  // error
+                     str += '<li id=li_\''+k+'\'>' +
+                        '<div style="margin-right:35px">' +
+                         '<a style="margin-right:15px;" href="javascript:void(0);" onclick="del_file(\''+k+'\')"> remove</a>' +
+                        '<span>'+fobj.name +'</span>' +
+                        '<span style="float:right; color=#FF4326">failed</span>' +
+                        '<div>' +
+                        '</li>';
+                }else if (state === 2) {// ing
+                    str += '<li id=li_\''+k+'\'>' +
+                        '<div style="margin-right:35px">' +
+                        '<span style="margin-right:15px; color:#8585FF" > remove</span>' +
+                        '<span>'+fobj.name +'</span>' +
+                        '<span style="float:right;">'+f['per']+'% uploading</span>' +
+                        '<div style="height:1px;background-color:#8585ff; width:'+f['per']+'%"><div>' +
+                        '<div>' +
+                        '</li>';
+                }
+            }
+        }
+        file_ul.innerHTML = str;
+    }
+    function is_empty(arg) {
+        return arg === null || arg === undefined || arg === '';
+    }
+    function ftoa(f) {
+        let s = '';
+        for (i in f) {
+            s = s+f[i];
+        }
+        return window.btoa(window.encodeURIComponent(s));
+    }
+    function upload_file() {
+        if (is_map_empty(file_map) || file_map.size === 0){
+            alert('Please select one file at least');
+            return;
+        }
+        let all_completed = true;
+        for (let pair of file_map){
+            all_completed = all_completed && (pair[1]['state']===1);
+        }
+        if (all_completed){
+            alert('All files have uploaded, Please select some file to upload.');
+            return;
+        }
+        for (let pair of file_map){
+            let f = pair[1];
+            if (is_empty(f) || f['state'] === 1) continue;
+            let fobj = f['fobj'];
+            let form = new FormData();
+            form.append('file', fobj);
+            let xhr = new XMLHttpRequest();
+            xhr.custom_file_name=fobj.name;
+            xhr.custom_file_key=pair[0];
+            xhr.upload.custom_file_key=pair[0];
+            xhr.open('post', url, true);
+            xhr.onload = upload_complete;
+            xhr.onerror = upload_error;
+            xhr.upload.onprogress = upload_progress;
+            xhr.send(form);
+        }
+    }
+    function is_map_empty(map) {
+        if (!is_empty(map)) {
+            let values_all_empty = true;
+            for (let pair of map){
+                values_all_empty = values_all_empty && (is_empty(pair[1]));
+            }
+            return values_all_empty;
+        }
+        return true
+    }
+    function upload_complete(evt, id) {
+        file_map.get(this.custom_file_key)['state'] = 1;
+        update_ul();
+        console.log('upload_completed', 'id is', this.custom_file_name);
+    }
+    function upload_error(evt) {
+        file_map.get(this.custom_file_key)['state'] = -1;
+        update_ul();
+        alert('upload error: '+evt);
+    }
+    function upload_progress(evt) {
+        console.log('upload_progress',evt.lengthComputable);
+        let f = file_map.get(this.custom_file_key);
+        f['state'] = 2; //ing
+        if (evt.lengthComputable)
+            f['per'] = Math.round(evt.loaded / evt.total * 100);
+        else
+            f['per'] = 'unknown';
+        update_ul();
+    }
 </script>
 </body>
 </html>
