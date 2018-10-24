@@ -99,7 +99,8 @@ def respond_file(path, mime=None, as_attachment=False):
         mime = mimetypes.guess_type(local_path)[0]
         if mime is None:  # 无法获取类型，默认使用 text/plain
             mime = 'text/plain'
-
+    if mime in ['text/html', '']:
+        mime = 'text/plain'
     return send_from_directory(get_parent_path(local_path),
                                get_filename(local_path),
                                mimetype=mime,
