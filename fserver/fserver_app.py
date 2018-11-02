@@ -1,9 +1,7 @@
 # -*- coding: utf-8 -*-
 import mimetypes
 import os
-import posixpath
 import sys
-import urllib
 
 from flask import Flask, request, redirect, jsonify
 from flask import render_template
@@ -14,7 +12,15 @@ from fserver import GetArg
 from fserver import conf
 from fserver.conf import CDN_JS
 from fserver.conf import VIDEO_SUFFIX
+from fserver.path_util import get_filename
+from fserver.path_util import get_suffix
+from fserver.path_util import is_dir
+from fserver.path_util import is_file
+from fserver.path_util import normalize_path
+from fserver.path_util import parent_path
+from fserver.path_util import translate_path
 from fserver.util import debug
+from fserver.util import warning
 
 app = Flask(__name__, template_folder='templates')
 
@@ -27,12 +33,13 @@ if sys.version_info < (3, 4):
 @app.route('/<path:path>', methods=['GET'])
 def do_get(path):
     arg = GetArg(request.args)
-    debug('get_ls: path %s,' % path, 'arg is', arg.to_dict())
+    debug('do_get: path %s,' % path, 'arg is', arg.to_dict())
+    if path == '' or path == '/':
+        return get_root()
     local_path = translate_path(path)
-
-    if os.path.isdir(local_path):  # 目录
+    if is_dir(local_path):  # 目录
         return list_dir(path)
-    elif os.path.exists(local_path):  # 非目录
+    elif is_file(local_path) and not path_permission_deny(path):  # 文件
         if arg.mode is None or arg.mode == GetArg.MODE_NORMAL:
             if get_suffix(path) in VIDEO_SUFFIX:
                 return play_video(path)
@@ -45,13 +52,33 @@ def do_get(path):
         elif arg.mode == GetArg.MODE_VIDEO:
             return play_video(path)
 
-    return render_template('error.html', error='No such dir or file: ' + path)
+    if os.path.exists(path) and path_permission_deny(path):
+        warning('permission deny: ' + path)
+        return resp_permission_deny(path)
+    else:
+        return render_template('error.html', error='No such dir or file: ' + path)
+
+
+def get_root():
+    if len(conf.WHITE_LIST) == 0 and len(conf.BLACK_LIST) == 0:
+        return list_dir('')
+    else:
+        lst = [i for i in conf.WHITE_LIST]
+        lst.extend([i for i in os.listdir('.') if not path_permission_deny(i)])  # check permission
+        lst = [i + '/' if is_dir(i) else i for i in lst]  # add '/' to dir
+        return render_template('list.html',
+                               upload=conf.UPLOAD,
+                               path='',
+                               arg=GetArg(request.args).format_for_url(),
+                               list=lst)
 
 
 @app.route('/', defaults={'path': ''}, methods=['POST'])
 @app.route('/<path:path>', methods=['POST'])
 def do_post(path):
     debug('post_path: %s' % path)
+    if path_permission_deny(path):
+        resp_permission_deny(path)
     if not conf.UPLOAD:
         return redirect(request.url)
     try:
@@ -70,29 +97,29 @@ def do_post(path):
             res = {'operation': 'upload_file', 'state': 'succeed', 'filename': request_file.filename}
             return jsonify(**res)
     except Exception as e:
-        debug('do_post (error): ', e.message)
-        return render_template('error.html', error=e.message)
+        debug('do_post (error): ', e)
+        return render_template('error.html', error=e)
 
 
 def list_dir(path):
     debug('list_dir', path)
     local_path = translate_path(path)
     arg = GetArg(request.args)
-    if os.path.isdir(local_path):  # 目录
+    if is_dir(local_path) and not path_permission_deny(path):  # dir
         lst = os.listdir(local_path)
-        for i, l in enumerate(lst):
-            if os.path.isdir('/'.join([local_path, l])):
-                lst[i] += '/'
+        lst = [i for i in lst if not path_permission_deny(path + '/' + i)]  # check permission
+        lst = [i + '/' if is_dir(local_path + '/' + i) else i for i in lst]  # add '/' to dir
         return render_template('list.html',
                                upload=conf.UPLOAD,
                                path=path,
                                arg=arg.format_for_url(),
                                list=lst)
+    return resp_permission_deny(path)
 
 
 def respond_file(path, mime=None, as_attachment=False):
     debug('respond_file:', path)
-    if os.path.isdir(path):
+    if is_dir(path):
         return do_get(path)
     local_path = translate_path(path)
     if mime is None or mime not in mimetypes.types_map.values():  # mime 无效
@@ -101,7 +128,7 @@ def respond_file(path, mime=None, as_attachment=False):
             mime = 'text/plain'
     if mime in ['text/html', '']:
         mime = 'text/plain'
-    return send_from_directory(get_parent_path(local_path),
+    return send_from_directory(parent_path(local_path),
                                get_filename(local_path),
                                mimetype=mime,
                                as_attachment=as_attachment)
@@ -109,7 +136,7 @@ def respond_file(path, mime=None, as_attachment=False):
 
 def play_video(path):
     debug('play_video:', path)
-    if os.path.isdir(translate_path(path)):
+    if is_dir(translate_path(path)):
         return do_get(path)
 
     arg = GetArg(request.args)
@@ -131,30 +158,32 @@ def play_video(path):
                            typejss=tjs)
 
 
-def get_filename(path):
-    try:
-        ind_1 = path.rindex(os.sep)
-        return path[ind_1 + 1:] if ind_1 >= 0 else path
-    except Exception as e:
-        debug('get_filename (error):', e, ', path:', path)
-        return path
+def path_permission_deny(path):
+    if path == '' or path == '/' or path == 'favicon.ico':
+        return False
+    if len(conf.BLACK_LIST) == 0 and len(conf.WHITE_LIST) == 0:
+        return False
+
+    np = normalize_path(path)
+    if len(conf.WHITE_LIST) > 0:
+        for w in conf.WHITE_LIST:
+            if np == w:
+                return False
+            elif np.startswith(w) and np not in conf.BLACK_LIST:
+                return False  # one white_path is parent_path
+        return True  # define white_list while path not satisfy white_list
+    if len(conf.BLACK_LIST) > 0:
+        for b in conf.BLACK_LIST:
+            if np == b:
+                return True
+            if b.startswith(np) and np not in conf.WHITE_LIST:
+                return True
+        return False
+    return True
 
 
-def get_parent_path(path):
-    try:
-        filename = get_filename(path)
-        return path[:path.rindex(filename)]
-    except Exception as e:
-        debug('get_parent_path (error)', e)
-        return ''
-
-
-def get_suffix(path):
-    try:
-        return path[path.rindex('.') + 1:]
-    except Exception as e:
-        debug('get_suffix (error):', e)
-        return ''
+def resp_permission_deny(path):
+    return render_template('error.html', error='Permission deny for such dir or file: ' + path)
 
 
 def plus_filename(filename):
@@ -168,34 +197,3 @@ def plus_filename(filename):
         res = res + '.' + suffix if suffix != '' else res
         if not os.path.exists(res):
             return res
-
-
-def translate_path(path):
-    """Translate a /-separated PATH to the local filename syntax.
-
-    Components that mean special things to the local file system
-    (e.g. drive or directory names) are ignored.  (XXX They should
-    probably be diagnosed.)
-
-    """
-    # abandon query parameters
-    path = path.split('?', 1)[0]
-    path = path.split('#', 1)[0]
-    # Don't forget explicit trailing slash when normalizing. Issue17324
-    trailing_slash = path.rstrip().endswith('/')
-    try:
-        path = urllib.parse.unquote(path, errors='surrogatepass')
-    except Exception:
-        path = urllib.unquote(path)
-    path = posixpath.normpath(path)
-    words = path.split('/')
-    words = filter(None, words)
-    path = os.getcwd()
-    for word in words:
-        if os.path.dirname(word) or word in (os.curdir, os.pardir):
-            # Ignore components that are not a simple file/directory name
-            continue
-        path = os.path.join(path, word)
-    if trailing_slash:
-        path += '/'
-    return path

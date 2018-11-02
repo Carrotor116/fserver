@@ -2,22 +2,31 @@
 from __future__ import print_function
 
 import os
+import sys
 
 from fserver import conf
 
 
 def debug(*args):
     if conf.DEBUG:
-        min_len = 40
-        msg = ''
-        for i in args:
-            msg += str(i) + ' '
-        msg = '| ' + msg.replace('\n', '\n| ')
-        ln = max([len(i) + 3 for i in msg.split('\n')])
-        ln = ln if ln > min_len else min_len
-        print('_' * ln)
-        print(msg)
-        print('=' * ln)
+        pretty_print(sys.stdout, *args)
+
+
+def warning(*args):
+    pretty_print(sys.stderr, *args)
+
+
+def pretty_print(file, *args):
+    min_len = 40
+    msg = ''
+    for i in args:
+        msg += str(i) + ' '
+    msg = '| ' + msg.replace('\n', '\n| ')
+    ln = max([len(i) + 3 for i in msg.split('\n')])
+    ln = ln if ln > min_len else min_len
+    print('_' * ln, file=file)
+    print(msg, file=file)
+    print('=' * ln, file=file)
 
 
 def _get_ip_v4_ipconfig():
@@ -28,7 +37,7 @@ def _get_ip_v4_ipconfig():
         if '127.0.0.1' not in ips:
             ips.append('127.0.0.1')
     except Exception as e:
-        debug(e.message)
+        debug(e)
     return ips
 
 
@@ -43,7 +52,7 @@ def _get_ip_v4_ifconfig():
         if '127.0.0.1' not in ips:
             ips.append('127.0.0.1')
     except Exception as e:
-        debug(e.message)
+        debug(e)
     return ips
 
 
