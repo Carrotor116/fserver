@@ -162,9 +162,6 @@ class CmdOption:
                     else:
                         conf.BLACK_LIST.add(p)
 
-        # for i in conf.WHITE_LIST:
-        #     [conf.BLACK_LIST.add(j) for j in path_util.parents_path(i)]
-
 
 if __name__ == '__main__':
     run_fserver()

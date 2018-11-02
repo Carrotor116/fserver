@@ -64,7 +64,7 @@ def get_root():
         return list_dir('')
     else:
         lst = [i for i in conf.WHITE_LIST]
-        lst.extend([i for i in os.listdir('.') if not path_permission_deny(i)])  # check permission
+        lst.extend([i for i in os.listdir('.') if not path_permission_deny(i) and i not in lst])  # check permission
         lst = [i + '/' if is_dir(i) else i for i in lst]  # add '/' to dir
         return render_template('list.html',
                                upload=conf.UPLOAD,
