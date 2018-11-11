@@ -31,7 +31,12 @@ Optional arguments:
 
 def run_fserver():
     # init conf
-    CmdOption().init_conf(sys.argv[1:])
+    try:
+        CmdOption().init_conf(sys.argv[1:])
+        check_config()
+    except OptionError as e:
+        print('error: {}\n\n{}'.format(e.msg, usage_short))
+        sys.exit(-1)
 
     if conf.DEBUG:
         conf.display()
@@ -57,7 +62,7 @@ def getopt(args, short_opts, long_opts=None):
         long_opts = []
     opts_2 = [('-' + i.replace(':', ''), True if i.endswith(':') else False) for i in short_opts]
     opts_2.extend([('--' + i.replace('=', ''), True if i.endswith('=') else False) for i in long_opts])
-    options = []
+    options = dict()
     for ind, value in enumerate(args):
         if value is None:
             continue
@@ -70,7 +75,7 @@ def getopt(args, short_opts, long_opts=None):
                         raise OptionError('error: option %s requires argument' % value)
                     v = args[ind + 1]
                     args[ind + 1] = None
-                options.append((value, v))
+                options[value] = v
                 recognized = True
                 break
         if recognized:
@@ -88,6 +93,14 @@ def getopt(args, short_opts, long_opts=None):
 
     argv = [i for i in args if i is not None]
     return options, argv
+
+
+def check_config():
+    if not isinstance(conf.BIND_PORT, int) and not conf.BIND_PORT.isdigit():
+        raise OptionError('port must be a digit %s' % conf.BIND_PORT)
+    if not util.is_ip_v4(conf.BIND_IP):
+        raise OptionError('invalid ip address %s' % conf.BIND_IP)
+    return
 
 
 class CmdOption:
@@ -122,8 +135,9 @@ class CmdOption:
         if len(args) > 0:
             conf.BIND_PORT = args[0]
 
-        conf.WHITE_LIST.clear()
-        for name, value in options:
+        tmp_white_list = set()
+        tmp_black_list = set()
+        for name, value in options.items():
             if name in self.OPTIONS['help'][2]:
                 print(usage)
                 sys.exit()
@@ -151,7 +165,7 @@ class CmdOption:
                     if p.startswith('..'):
                         util.warning('not support up_level path : %s' % p)
                     else:
-                        conf.WHITE_LIST.add(p)
+                        tmp_white_list.add(p)
             for black_opt in self.OPTIONS.keys():
                 if not black_opt.startswith('black'):
                     continue
@@ -160,7 +174,17 @@ class CmdOption:
                     if p.startswith('..'):
                         util.warning('not support up_level path : %s' % p)
                     else:
-                        conf.BLACK_LIST.add(p)
+                        tmp_black_list.add(p)
+        conf.WHITE_LIST.clear()
+        conf.BLACK_LIST.clear()
+        for w in tmp_white_list:
+            [conf.WHITE_LIST.add(i) for i in path_util.path_exists(w)]
+        for b in tmp_black_list:
+            [conf.BLACK_LIST.add(i) for i in path_util.path_exists(b)]
+        # to make sure the prior of black is high than white's.
+        [conf.WHITE_LIST.remove(b) for b in conf.BLACK_LIST if b in conf.WHITE_LIST]
+        for w in conf.WHITE_LIST:  # init white_list_parents
+            [conf.WHITE_LIST_PARENTS.add(i) for i in path_util.parents_path(w)]
 
 
 if __name__ == '__main__':

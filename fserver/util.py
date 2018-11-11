@@ -2,6 +2,7 @@
 from __future__ import print_function
 
 import os
+import re
 import sys
 
 from fserver import conf
@@ -62,7 +63,7 @@ def _get_ip_v4_ip_add():
     try:
         ip_cmd = os.popen(sh).read()
         if 'succeed' in ip_cmd:
-            ips.extend([i[:i.index('/')] for i in ip_cmd.split('\n') if i != '' and i != 'succeed'])
+            ips.extend([i for i in ip_cmd.split('\n') if i != '' and i != 'succeed'])
         if '127.0.0.1' not in ips:
             ips.append('127.0.0.1')
     except Exception as e:
@@ -86,7 +87,18 @@ def get_ip_v4():
     return ips
 
 
+def is_ip_v4(str):
+    r = re.match(r'((?:(?:25[0-5]|2[0-4]\d|(?:1\d{2}|[1-9]?\d))\.){3}(?:25[0-5]|2[0-4]\d|(?:1\d{2}|[1-9]?\d)))', str)
+    if r is not None and r.span()[1] == len(str):
+        return True
+    else:
+        return False
+
+
 if __name__ == '__main__':
     print(_get_ip_v4_ipconfig())
     print(_get_ip_v4_ip_add())
     print(_get_ip_v4_ifconfig())
+    print(is_ip_v4('127.1.1.1'))
+    print(is_ip_v4('127.a.1.1'))
+    print(is_ip_v4('0.0.0.0'))

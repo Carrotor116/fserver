@@ -14,6 +14,7 @@ from fserver.conf import CDN_JS
 from fserver.conf import VIDEO_SUFFIX
 from fserver.path_util import get_filename
 from fserver.path_util import get_suffix
+from fserver.path_util import is_child
 from fserver.path_util import is_dir
 from fserver.path_util import is_file
 from fserver.path_util import normalize_path
@@ -63,9 +64,10 @@ def get_root():
     if len(conf.WHITE_LIST) == 0 and len(conf.BLACK_LIST) == 0:
         return list_dir('')
     else:
-        lst = [i for i in conf.WHITE_LIST]
-        lst.extend([i for i in os.listdir('.') if not path_permission_deny(i) and i not in lst])  # check permission
-        lst = [i + '/' if is_dir(i) else i for i in lst]  # add '/' to dir
+        local_path = translate_path('')
+        lst = os.listdir(local_path)
+        lst = [i for i in lst if not path_permission_deny(i)]  # check permission
+        lst = [i + '/' if is_dir(local_path + '/' + i) else i for i in lst]  # add '/' to dir
         return render_template('list.html',
                                upload=conf.UPLOAD,
                                path='',
@@ -159,27 +161,38 @@ def play_video(path):
 
 
 def path_permission_deny(path):
+    """
+    note that prior of black list is high than one of white list,
+    that is, even path is sub of white list, path will be denied if path is in black or black' sub path
+    :param path:
+    :return:
+    """
+    DENY = True
     if path == '' or path == '/' or path == 'favicon.ico':
-        return False
-    if len(conf.BLACK_LIST) == 0 and len(conf.WHITE_LIST) == 0:
-        return False
+        return not DENY
+    if len(conf.BLACK_LIST) == 0 and len(conf.WHITE_LIST) == 0:  # disable white or black list function
+        return not DENY
 
     np = normalize_path(path)
-    if len(conf.WHITE_LIST) > 0:
+    if len(conf.WHITE_LIST) > 0:  # white mode
+        if np in conf.WHITE_LIST_PARENTS or np in conf.WHITE_LIST:  # path is white or parent of white
+            return not DENY
+        black_child = False
         for w in conf.WHITE_LIST:
-            if np == w:
-                return False
-            elif np.startswith(w) and np not in conf.BLACK_LIST:
-                return False  # one white_path is parent_path
-        return True  # define white_list while path not satisfy white_list
-    if len(conf.BLACK_LIST) > 0:
+            if is_child(np, w):
+                for b in conf.BLACK_LIST:
+                    if is_child(np, w):
+                        black_child = True
+                if not black_child:
+                    return not DENY  # path is child of white and not child of black
+        return DENY  # define white_list while path not satisfy white_list
+
+    if len(conf.BLACK_LIST) > 0:  # black mode
         for b in conf.BLACK_LIST:
-            if np == b:
-                return True
-            if b.startswith(np) and np not in conf.WHITE_LIST:
-                return True
-        return False
-    return True
+            if is_child(np, b):
+                return DENY  # path is in black list.
+        return not DENY
+    return DENY
 
 
 def resp_permission_deny(path):
@@ -187,9 +200,9 @@ def resp_permission_deny(path):
 
 
 def plus_filename(filename):
-    ind = filename.rindex('.')
+    ind = -1 if '.' not in filename else filename.rindex('.')
+    prefix = filename[:ind] if ind >= 0 else filename
     suffix = get_suffix(filename)
-    prefix = filename[:ind] if ind > 0 else filename
     i = 0
     while True:
         i += 1

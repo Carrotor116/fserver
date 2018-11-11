@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
-VERSION = '0.0.12'
-BUILD_TIME = '2018/11/02'
+VERSION = '0.0.13'
+BUILD_TIME = '2018/11/11'
 
 DEBUG = False
 
@@ -21,6 +21,7 @@ BIND_PORT = 2000
 
 BLACK_LIST = set()
 WHITE_LIST = set()
+WHITE_LIST_PARENTS = set()
 
 
 def display():

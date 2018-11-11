@@ -9,6 +9,9 @@ now = time.strftime('%Y/%m/%d', time.localtime(time.time()))
 if conf.BUILD_TIME != now:
     print('conf.BUILD_TIME is invalid: %s != %s' % (conf.BUILD_TIME, now))
     sys.exit(-1)
+if conf.DEBUG:
+    print('debug mode is open by default')
+    sys.exit(-1)
 
 setup(
     name='fserver',
@@ -30,5 +33,5 @@ setup(
     }
 )
 
-# python setup.py sdist bdist_wheel upload
-# twine upload dist
+# python setup.py sdist bdist_wheel
+# twine upload dist/*

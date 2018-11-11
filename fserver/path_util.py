@@ -99,16 +99,26 @@ def normalize_path(path):
 
 
 def parents_path(path):
-    res = []
+    """
+    :param path:
+    :return: return parents_path which does not contain the end '/', that is remove the end '/'
+    """
+    res = set()
     path = normalize_path(path)
     while '/' in path:
         sep_ind = path.rindex('/')
-        res.append(path[:sep_ind])
+        res.add(path[:sep_ind])
         path = path[:sep_ind]
+    if path.startswith('./') or not path.startswith('.'):
+        res.add('.')
     return res
 
 
 def parent_path(path):
+    """
+    :param path:
+    :return: return path which does not contain the end '/'
+    """
     if os.path.sep not in path:
         return '/'
     else:
@@ -139,6 +149,41 @@ def get_suffix(path):
         return ''
 
 
+def is_child(child_path, parent_path):
+    nc = normalize_path(child_path)
+    np = normalize_path(parent_path)
+    if len(nc) >= len(np):
+        if nc == np:
+            return True
+        if nc.startswith(np) and nc[len(np)] == os.sep:
+            return True
+    return False
+
+
+def path_exists(path):
+    res = set()
+    np = normalize_path(path)
+    if os.path.exists(np):
+        res.add(np)
+        return res
+    sep_rind = -1 if os.sep not in np else np.rindex(os.sep)
+    if sep_rind != -1:
+        npp = parent_path(np)
+        np = np[sep_rind + 1:]
+        np_prefix = np[:len(np) - 1]
+        start_ind = -1 if '*' not in np else np.index('*')
+        if start_ind == len(np) - 1:
+            for li in os.listdir(npp):
+                if li[:len(np_prefix)] == np_prefix:
+                    res.add(path[:sep_rind]+os.sep+li)
+    return res
+
+
 if __name__ == '__main__':
     # print(to_local_path('test1/test2/test3/test4'))
-    print(normalize_path('test1////dsdas/test2///test3/../test4'))
+    print(normalize_path('test1////ds*/test2///test3/../test4'))
+    print(parents_path('test1////dsdas/test2///test3/../test4'))
+    print(to_local_path('t'))
+    print(parents_path('./t'))
+    print(parents_path('../t'))
+    print(path_exists('p1/p*'))
