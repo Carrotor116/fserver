@@ -119,11 +119,12 @@ def parent_path(path):
     :param path:
     :return: return path which does not contain the end '/'
     """
-    if os.path.sep not in path:
-        return '/'
+    np = normalize_path(path)
+    if '/' not in np:
+        return '.'
     else:
-        sep_ind = path.rindex(os.path.sep)
-        return path[:sep_ind]
+        sep_ind = np.rindex('/')
+        return np[:sep_ind]
 
 
 def is_dir(local_path):
@@ -166,16 +167,22 @@ def path_exists(path):
     if os.path.exists(np):
         res.add(np)
         return res
-    sep_rind = -1 if os.sep not in np else np.rindex(os.sep)
-    if sep_rind != -1:
+
+    start_ind = -1 if '*' not in np else np.index('*')
+    start_rind = -1 if '*' not in np else np.rindex('*')
+    sep_rind = -1 if '/' not in np else np.rindex('/')
+
+    if start_ind != -1 and start_ind == start_rind:
+        if start_ind == 0:
+            filename_prefix = ''
+            filename_suffix = np[1:] if len(np) > 1 else ''
+        else:
+            filename_prefix = np[sep_rind + 1:start_ind]
+            filename_suffix = np[start_ind + 1:]
         npp = parent_path(np)
-        np = np[sep_rind + 1:]
-        np_prefix = np[:len(np) - 1]
-        start_ind = -1 if '*' not in np else np.index('*')
-        if start_ind == len(np) - 1:
-            for li in os.listdir(npp):
-                if li[:len(np_prefix)] == np_prefix:
-                    res.add(path[:sep_rind]+os.sep+li)
+        for li in os.listdir(npp):
+            if li.startswith(filename_prefix) and li.endswith(filename_suffix):
+                res.add(npp + '/' + li)
     return res
 
 
@@ -187,3 +194,6 @@ if __name__ == '__main__':
     print(parents_path('./t'))
     print(parents_path('../t'))
     print(path_exists('p1/p*'))
+    print(path_exists('util*'))
+    print(path_exists('*'))
+    print(path_exists('*.pyc'))
