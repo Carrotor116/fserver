@@ -3,10 +3,10 @@ import sys
 
 from gevent.pywsgi import WSGIServer
 
-from fserver import conf
-from fserver import path_util
-from fserver import util
-from fserver.fserver_app import app as application
+from app import conf
+from app import path_util
+from app import util
+from app.fserver_app import app as application
 
 usage_short = 'usage: fserver [-h] [-d] [-u] [-o] [-u] [-o] [-i ADDRESS] [-w PATH] [port]'
 usage = '''

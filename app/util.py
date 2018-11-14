@@ -5,7 +5,7 @@ import os
 import re
 import sys
 
-from fserver import conf
+from app import conf
 
 
 def debug(*args):

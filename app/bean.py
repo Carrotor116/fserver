@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 class GetArg:
     ARG_MODE = 'm'
     ARG_PLAY = 'p'

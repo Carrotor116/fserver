@@ -1,9 +1,10 @@
+# -*- coding: utf-8 -*-
 import sys
 import time
 
 from setuptools import setup
 
-from fserver import conf
+from app import conf
 
 now = time.strftime('%Y/%m/%d', time.localtime(time.time()))
 if conf.BUILD_TIME != now:
@@ -21,7 +22,7 @@ setup(
     author='Nonu',
     author_email='1162365377@qq.com',
     license='MIT',
-    packages=['fserver'],
+    packages=['app'],
     install_requires=['Flask >= 1.0.2', 'gevent >= 1.3.6'],
     package_data={
         '': ['templates/*.html', 'static/*']
@@ -33,5 +34,5 @@ setup(
     }
 )
 
-# python setup.py sdist bdist_wheel
+# python setup.py bdist_wheel sdist
 # twine upload dist/*
