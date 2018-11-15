@@ -7,11 +7,12 @@ from app import conf
 from app import path_util
 from app import util
 from app.fserver_app import app as application
+import os
 
-usage_short = 'usage: fserver [-h] [-d] [-u] [-o] [-u] [-o] [-i ADDRESS] [-w PATH] [-b PATH] [port]'
+usage_short = 'usage: fserver [-h] [-d] [-u] [-o] [-u] [-o] [-i ADDRESS] [-w PATH] [-b PATH] [-r PATH] [port]'
 usage = '''
 Usage:
-  fserver [-h] [-d] [-u] [-o] [-i ADDRESS] [port]
+  fserver [-h] [-d] [-u] [-o] [-u] [-o] [-i ADDRESS] [-w PATH] [-b PATH] [port]
 
 Positional arguments:
   port                                Specify alternate port [default: 2000]
@@ -25,8 +26,8 @@ Optional arguments:
   -i ADDRESS, --ip ADDRESS            Specify alternate bind address [default: all interfaces]
   -w PATH, --white PATH               Use white_list mode. Only PATH, sub directory or file, will be share. 
                                       You can use [-wi PATH], i is num from 1 to 23, to share 24 PATHs at most    
-  -b PATH, --black PATH 
-                                      Use black_list mode. It's similar to option '-w'    
+  -b PATH, --black PATH               Use black_list mode. It's similar to option '-w'    
+  -r PATH, --root PATH                Set PATH as root path for server    
  '''
 
 
@@ -113,7 +114,8 @@ class CmdOption:
         'version': ('v', 'version', ['--version', '-v']),
         'ip': ('i:', 'ip=', ['--ip', '-i']),
         'white': ('w:', 'white=', ['--white', '-w']),
-        'black': ('b:', 'black=', ['--black', '-b'])
+        'black': ('b:', 'black=', ['--black', '-b']),
+        'root': ('r:', 'root=', ['--root', '-r'])
     }
     for i in range(1, 24):
         OPTIONS['white%s' % i] = ('w%s:' % i, 'white%s=' % i, ['--white%s' % i, '-w%s' % i])
@@ -159,6 +161,13 @@ class CmdOption:
                 continue
             if name in self.OPTIONS['ip'][2]:
                 conf.BIND_IP = value
+                continue
+            if name in self.OPTIONS['root'][2]:
+                conf.ROOT = path_util.normalize_path(value)
+                if not os.path.exists(conf.ROOT) or not os.path.isdir(conf.ROOT):
+                    raise OptionError('invalid root path %s' % conf.ROOT)
+                else:
+                    os.chdir(conf.ROOT)
                 continue
             for white_opt in self.OPTIONS.keys():
                 if not white_opt.startswith('white'):

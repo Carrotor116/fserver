@@ -92,7 +92,7 @@ def to_local_abspath(path):
 
 def normalize_path(path):
     p = path.replace('\\', '/').replace('/./', '/')
-    p = p[:len(p) - 1] if p.endswith('/') else p
+    p = p[:len(p) - 1] if p.endswith('/') and len(p) != 1 else p
     p = p[2:] if p.startswith('./') else p
     p = re.compile('/+').sub('/', p)
     p = re.compile('/[^./]*?/\.\.').sub('', p)
@@ -181,9 +181,10 @@ def path_exists(path):
                          .replace(r'|', r'\|')
                          .replace(r'*', r'.*') + '$')
     npp = parent_path(np)
-    for i in os.listdir(npp):
-        if pattern.match(i):
-            res.add(i if file_name == np else npp + '/' + i)
+    if os.path.exists(npp) and os.path.isdir(npp):
+        for i in os.listdir(npp):
+            if pattern.match(i):
+                res.add(i if file_name == np else npp + '/' + i)
     return res
 
 
@@ -197,3 +198,4 @@ if __name__ == '__main__':
     print(path_exists('p1/p*'))
     print(path_exists('*.py'))
     print(path_exists('*_*.py'))
+    print(normalize_path('/'))
