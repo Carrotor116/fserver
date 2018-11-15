@@ -121,7 +121,7 @@ def parent_path(path):
     :return: return path which does not contain the end '/'
     """
     if os.path.sep not in path:
-        return '/'
+        return '.'
     else:
         sep_ind = path.rindex(os.path.sep)
         return path[:sep_ind]
@@ -167,16 +167,23 @@ def path_exists(path):
     if os.path.exists(np):
         res.add(np)
         return res
-    sep_rind = -1 if os.sep not in np else np.rindex(os.sep)
-    if sep_rind != -1:
-        npp = parent_path(np)
-        np = np[sep_rind + 1:]
-        np_prefix = np[:len(np) - 1]
-        start_ind = -1 if '*' not in np else np.index('*')
-        if start_ind == len(np) - 1:
-            for li in os.listdir(npp):
-                if li[:len(np_prefix)] == np_prefix:
-                    res.add(path[:sep_rind]+os.sep+li)
+    file_name = np if '/' not in np else np[np.rindex('/') + 1:]
+    pattern = re.compile(file_name.replace('\\', r'\\')
+                         .replace(r'$', r'\$')
+                         .replace(r'(', r'\(')
+                         .replace(r')', r'\)')
+                         .replace(r'+', r'\+')
+                         .replace(r'.', r'\.')
+                         .replace(r'[', r'\[')
+                         .replace(r'?', r'\?')
+                         .replace(r'^', r'\^')
+                         .replace(r'{', r'\{')
+                         .replace(r'|', r'\|')
+                         .replace(r'*', r'.*') + '$')
+    npp = parent_path(np)
+    for i in os.listdir(npp):
+        if pattern.match(i):
+            res.add(i if file_name == np else npp + '/' + i)
     return res
 
 
@@ -188,3 +195,5 @@ if __name__ == '__main__':
     print(parents_path('./t'))
     print(parents_path('../t'))
     print(path_exists('p1/p*'))
+    print(path_exists('*.py'))
+    print(path_exists('*_*.py'))
