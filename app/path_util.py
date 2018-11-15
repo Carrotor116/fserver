@@ -42,7 +42,7 @@ def translate_path(path):
 
 def to_local_path(path):
     path = to_local_abspath(path)
-    here = to_local_abspath('')
+    here = to_local_abspath('.')
 
     min_len = len(path) if len(path) < len(here) else len(here)
     sep = os.path.sep
@@ -62,7 +62,7 @@ def to_local_path(path):
             if len(path) == len(here):
                 res = ''
             elif len(path) > len(here):
-                res = path[same_ind + 2:]
+                res = path[same_ind + 1:]
             else:
                 here = here[same_ind:]
                 res = '../' * count(here, sep)
@@ -86,7 +86,7 @@ def count(string, pattern):
 
 
 def to_local_abspath(path):
-    path = normalize_path(path)
+    path = '.' if path == '' else normalize_path(path)
     return os.path.abspath(path)
 
 
@@ -190,12 +190,18 @@ def path_exists(path):
 
 if __name__ == '__main__':
     # print(to_local_path('test1/test2/test3/test4'))
-    print(normalize_path('test1////ds*/test2///test3/../test4'))
-    print(parents_path('test1////dsdas/test2///test3/../test4'))
+    # print(normalize_path('test1////ds*/test2///test3/../test4'))
+    # print(parents_path('test1////dsdas/test2///test3/../test4'))
     print(to_local_path('t'))
-    print(parents_path('./t'))
-    print(parents_path('../t'))
-    print(path_exists('p1/p*'))
-    print(path_exists('*.py'))
-    print(path_exists('*_*.py'))
-    print(normalize_path('/'))
+    print(to_local_path('../../t'))
+    print(to_local_path('E:/PythonProjection/fserver/t'))
+    os.chdir(normalize_path('/'))
+    print(os.getcwd())
+    print(to_local_path('E:/PythonProjection/fserver/app/bean.py'))
+    print(to_local_path('../../t'))
+    # print(parents_path('./t'))
+    # print(parents_path('../t'))
+    # print(path_exists('p1/p*'))
+    # print(path_exists('*.py'))
+    # print(path_exists('*_*.py'))
+    # print(normalize_path('/'))

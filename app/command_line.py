@@ -35,9 +35,8 @@ def run_fserver():
     # init conf
     try:
         CmdOption().init_conf(sys.argv[1:])
-        check_config()
     except OptionError as e:
-        print('error: {}\n\n{}'.format(e.msg, usage_short))
+        print('error: {}\n\n{}\n'.format(e.msg, usage_short))
         sys.exit(-1)
 
     if conf.DEBUG:
@@ -97,15 +96,10 @@ def getopt(args, short_opts, long_opts=None):
     return options, argv
 
 
-def check_config():
-    if not isinstance(conf.BIND_PORT, int) and not conf.BIND_PORT.isdigit():
-        raise OptionError('port must be a digit %s' % conf.BIND_PORT)
-    if not util.is_ip_v4(conf.BIND_IP):
-        raise OptionError('invalid ip address %s' % conf.BIND_IP)
-    return
-
-
 class CmdOption:
+    def __init__(self):
+        pass
+
     OPTIONS = {
         'help': ('h', 'help', ['--help', '-h']),
         'debug': ('d', 'debug', ['debug', '-d']),
@@ -164,34 +158,48 @@ class CmdOption:
                 continue
             if name in self.OPTIONS['root'][2]:
                 conf.ROOT = path_util.normalize_path(value)
-                if not os.path.exists(conf.ROOT) or not os.path.isdir(conf.ROOT):
-                    raise OptionError('invalid root path %s' % conf.ROOT)
-                else:
-                    os.chdir(conf.ROOT)
                 continue
             for white_opt in self.OPTIONS.keys():
                 if not white_opt.startswith('white'):
                     continue
                 if name in self.OPTIONS[white_opt][2]:
-                    p = path_util.to_local_path(value)
-                    if p.startswith('..'):
-                        util.warning('not support up_level path : %s' % p)
-                    else:
-                        tmp_white_list.add(p)
+                    p = path_util.to_local_abspath(value)
+                    tmp_white_list.add(p)
             for black_opt in self.OPTIONS.keys():
                 if not black_opt.startswith('black'):
                     continue
                 if name in self.OPTIONS[black_opt][2]:
-                    p = path_util.to_local_path(value)
-                    if p.startswith('..'):
-                        util.warning('not support up_level path : %s' % p)
-                    else:
-                        tmp_black_list.add(p)
+                    p = path_util.to_local_abspath(value)
+                    tmp_black_list.add(p)
+
+        if not os.path.exists(conf.ROOT) or not os.path.isdir(conf.ROOT):
+            raise OptionError('Invalid root path: %s' % conf.ROOT)
+        try:
+            os.chdir(conf.ROOT)
+        except OSError:
+            raise OptionError('Permission deny for root path: %s' % conf.ROOT)
+
         conf.WHITE_LIST.clear()
         conf.BLACK_LIST.clear()
-        for w in tmp_white_list:
+        tmp_white_list2 = set()  # store relative path for conf.ROOT
+        tmp_black_list2 = set()  # store relative path for conf.ROOT
+        if len(tmp_white_list) > 0:  # make sure to open white mode when '-w' is used
+            conf.WHITE_LIST.add('')
+        for i in tmp_white_list:
+            p = path_util.to_local_path(i)
+            if p.startswith('..'):
+                util.warning('Un support parent path: %s' % p)
+            else:
+                tmp_white_list2.add(p)
+        for i in tmp_black_list:
+            p = path_util.to_local_path(i)
+            if p.startswith('..'):
+                util.warning('Un support parent path: %s' % p)
+            else:
+                tmp_black_list2.add(p)
+        for w in tmp_white_list2:
             [conf.WHITE_LIST.add(i) for i in path_util.path_exists(w)]
-        for b in tmp_black_list:
+        for b in tmp_black_list2:
             [conf.BLACK_LIST.add(i) for i in path_util.path_exists(b)]
         # to make sure the prior of black is high than white's.
         [conf.WHITE_LIST.remove(b) for b in conf.BLACK_LIST if b in conf.WHITE_LIST]

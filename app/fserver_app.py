@@ -107,18 +107,19 @@ def list_dir(path):
     debug('list_dir', path)
     local_path = translate_path(path)
     arg = GetArg(request.args)
-    try:
-        if is_dir(local_path) and not path_permission_deny(path):  # dir
+    if is_dir(local_path) and not path_permission_deny(path):  # dir
+        try:
             lst = os.listdir(local_path)
-            lst = [i for i in lst if not path_permission_deny(path + '/' + i)]  # check permission
-            lst = [i + '/' if is_dir(local_path + '/' + i) else i for i in lst]  # add '/' to dir
-            return render_template('list.html',
-                                   upload=conf.UPLOAD,
-                                   path=path,
-                                   arg=arg.format_for_url(),
-                                   list=lst)
-    except:
-        return resp_permission_deny(path)
+        except:
+            lst = []
+        lst = [i for i in lst if not path_permission_deny(path + '/' + i)]  # check permission
+        lst = [i + '/' if is_dir(local_path + '/' + i) else i for i in lst]  # add '/' to dir
+        return render_template('list.html',
+                               upload=conf.UPLOAD,
+                               path=path,
+                               arg=arg.format_for_url(),
+                               list=lst)
+    return resp_permission_deny(path)
 
 
 def respond_file(path, mime=None, as_attachment=False):
