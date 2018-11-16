@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import mimetypes
 import os
-import sys
 
 from flask import Flask, request, redirect, jsonify
 from flask import render_template
@@ -24,10 +23,6 @@ from app.util import debug
 from app.util import warning
 
 app = Flask(__name__, template_folder='templates')
-
-if sys.version_info < (3, 4):
-    reload(sys)
-    sys.setdefaultencoding("utf-8")
 
 
 @app.route('/', defaults={'path': ''}, methods=['GET'])
@@ -65,7 +60,10 @@ def get_root():
         return list_dir('')
     else:
         local_path = translate_path('')
-        lst = os.listdir(local_path)
+        try:
+            lst = os.listdir(local_path)
+        except OSError:
+            lst = []
         lst = [i for i in lst if not path_permission_deny(i)]  # check permission
         lst = [i + '/' if is_dir(local_path + '/' + i) else i for i in lst]  # add '/' to dir
         return render_template('list.html',
@@ -110,7 +108,7 @@ def list_dir(path):
     if is_dir(local_path) and not path_permission_deny(path):  # dir
         try:
             lst = os.listdir(local_path)
-        except:
+        except OSError:
             lst = []
         lst = [i for i in lst if not path_permission_deny(path + '/' + i)]  # check permission
         lst = [i + '/' if is_dir(local_path + '/' + i) else i for i in lst]  # add '/' to dir
