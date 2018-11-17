@@ -129,10 +129,11 @@ def parent_path(path):
     :param path:
     :return: return path which does not contain the end '/'
     """
-    if os.path.sep not in path:
+    path = normalize_path(path)
+    if '/' not in path:
         return '.'
     else:
-        sep_ind = path.rindex(os.path.sep)
+        sep_ind = path.rindex('/')
         return path[:sep_ind]
 
 
@@ -145,8 +146,9 @@ def is_file(local_path):
 
 
 def get_filename(path):
-    if os.path.sep in path:
-        sep_ind = path.rindex(os.path.sep)
+    path = normalize_path(path)
+    if '/' in path:
+        sep_ind = path.rindex('/')
         return path[sep_ind + 1:]
     else:
         return path
@@ -165,7 +167,7 @@ def is_child(child_path, parent_path):
     if len(nc) >= len(np):
         if nc == np:
             return True
-        if nc.startswith(np) and nc[len(np)] == os.sep:
+        if nc.startswith(np) and nc[len(np)] == '/':
             return True
     return False
 

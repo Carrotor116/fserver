@@ -182,7 +182,7 @@ def path_permission_deny(path):
         for w in conf.WHITE_LIST:
             if is_child(np, w):
                 for b in conf.BLACK_LIST:
-                    if is_child(np, w):
+                    if is_child(np, b):
                         black_child = True
                 if not black_child:
                     return not DENY  # path is child of white and not child of black
