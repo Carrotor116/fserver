@@ -7,20 +7,20 @@ from flask import render_template
 from flask import send_from_directory
 from werkzeug.utils import secure_filename
 
-from app import GetArg
-from app import conf
-from app.conf import CDN_JS
-from app.conf import VIDEO_SUFFIX
-from app.path_util import get_filename
-from app.path_util import get_suffix
-from app.path_util import is_child
-from app.path_util import is_dir
-from app.path_util import is_file
-from app.path_util import normalize_path
-from app.path_util import parent_path
-from app.path_util import translate_path
-from app.util import debug
-from app.util import warning
+from fserver import conf
+from fserver.bean import GetArg
+from fserver.conf import CDN_JS
+from fserver.conf import VIDEO_SUFFIX
+from fserver.path_util import get_filename
+from fserver.path_util import get_suffix
+from fserver.path_util import is_child
+from fserver.path_util import is_dir
+from fserver.path_util import is_file
+from fserver.path_util import normalize_path
+from fserver.path_util import parent_path
+from fserver.path_util import translate_path
+from fserver.util import debug
+from fserver.util import warning
 
 app = Flask(__name__, template_folder='templates')
 

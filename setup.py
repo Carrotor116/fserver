@@ -4,7 +4,7 @@ import time
 
 from setuptools import setup
 
-from app import conf
+from fserver import conf
 
 now = time.strftime('%Y/%m/%d', time.localtime(time.time()))
 if conf.BUILD_TIME != now:
@@ -22,7 +22,7 @@ setup(
     author='Nonu',
     author_email='1162365377@qq.com',
     license='MIT',
-    packages=['app'],
+    packages=['fserver'],
     install_requires=['Flask >= 1.0.2', 'gevent >= 1.3.6'],
     package_data={
         '': ['templates/*.html', 'static/*']

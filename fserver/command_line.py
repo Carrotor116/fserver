@@ -6,10 +6,10 @@ import sys
 import gevent
 from gevent.pywsgi import WSGIServer
 
-from app import conf
-from app import path_util
-from app import util
-from app.fserver_app import app as application
+from fserver import conf
+from fserver import path_util
+from fserver import util
+from fserver.fserver_app import app as application
 
 usage_short = 'usage: fserver [-h] [-d] [-u] [-o] [-u] [-o] [-i ADDRESS] [-w PATH] [-b PATH] [-r PATH] [port]'
 usage = '''
@@ -51,6 +51,8 @@ def run_fserver():
     else:
         print('  %s:%s' % (conf.BIND_IP, conf.BIND_PORT))
 
+    gevent.signal(signal.SIGINT, quit)
+    gevent.signal(signal.SIGTERM, quit)
     http_server = WSGIServer((conf.BIND_IP, int(conf.BIND_PORT)), application)
     http_server.serve_forever()
 
@@ -215,5 +217,4 @@ def quit():
 
 
 if __name__ == '__main__':
-    gevent.signal(signal.SIGINT, quit)
     run_fserver()

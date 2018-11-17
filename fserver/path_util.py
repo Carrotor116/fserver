@@ -44,37 +44,43 @@ def translate_path(path):
 
 
 def to_local_path(path):
+    """
+    :param path:
+    :return: the path relative to current path
+    """
     path = to_local_abspath(path)
     here = to_local_abspath('.')
 
     min_len = len(path) if len(path) < len(here) else len(here)
-    sep = os.path.sep
 
     if os.name == 'nt' and path[0] != here[0]:
         return path
     else:
-        sep_ind = 0
-        same_ind = 0
+        sep_ind = -1
+        diff_ind = -1
         for i in range(min_len):
             if here[i] != path[i]:
+                diff_ind = i
                 break
-            same_ind = i
-            if here[i] == sep:
+            if here[i] == '/':
                 sep_ind = i
-        if same_ind == min_len - 1:
-            if len(path) == len(here):
-                res = ''
-            elif len(path) > len(here):
-                res = path[same_ind + 1:]
-            else:
-                here = here[same_ind:]
-                res = '../' * count(here, sep)
+        if diff_ind == -1:
+            # split the same parent_path
+            if len(path) < len(here):  # path is substring of here
+                c = count(here[len(path):], '/')
+                return '../' * (c + 1)
+            elif len(path) > len(here):  # here is substring of path
+                if path[len(here)] == '/':
+                    return path[len(here) + 1:]
+                else:
+                    return '../' + path[len(parent_path(here)) + 1:]
+            else:  # here is the same with path
+                return '.'
         else:
-            res = '../' * (count(here[sep_ind:], sep)) + path[sep_ind + 1:]
-    res = normalize_path(res)
-    res = res + '/' if res.endswith('..') else res
-    res = './' if res == '' else res
-    return res
+            # sep_ind won't be -1 because the use of local_abspath
+            path = path[sep_ind + 1:]
+            here = here[sep_ind + 1:]
+            return '../' * (count(here, '/') + 1) + path
 
 
 def count(string, pattern):
@@ -90,7 +96,7 @@ def count(string, pattern):
 
 def to_local_abspath(path):
     path = '.' if path == '' else normalize_path(path)
-    return os.path.abspath(path)
+    return normalize_path(os.path.abspath(path))
 
 
 def normalize_path(path):
@@ -192,19 +198,11 @@ def path_exists(path):
 
 
 if __name__ == '__main__':
-    # print(to_local_path('test1/test2/test3/test4'))
-    # print(normalize_path('test1////ds*/test2///test3/../test4'))
-    # print(parents_path('test1////dsdas/test2///test3/../test4'))
-    print(to_local_path('t'))
-    print(to_local_path('../../t'))
-    print(to_local_path('E:/PythonProjection/fserver/t'))
-    os.chdir(normalize_path('/'))
     print(os.getcwd())
-    print(to_local_path('E:/PythonProjection/fserver/app/bean.py'))
-    print(to_local_path('../../t'))
-    # print(parents_path('./t'))
-    # print(parents_path('../t'))
-    # print(path_exists('p1/p*'))
-    # print(path_exists('*.py'))
-    # print(path_exists('*_*.py'))
-    # print(normalize_path('/'))
+    print(to_local_abspath('template/'))
+    print(to_local_path(os.getcwd() + '/' + '../a/b'))  # ../a/b
+    print(to_local_path(os.getcwd() + '/' + 'c/d'))  # c/d
+    print(to_local_path(os.getcwd() + '/' + '.'))  # .
+    print(to_local_path(os.getcwd() + '/'))  # .
+    print(to_local_path(os.getcwd() + '_diff/a'))  # ../x_diff/a
+    print(to_local_path(parent_path(os.getcwd()) + '/diff/template'))  # ../diff/template
