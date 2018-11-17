@@ -10,23 +10,23 @@ $ sudo pip install fserver
 
 ### usage
 ```
-usage: fserver [-h] [-d] [--ip ADDRESS] [port]
+Usage:
+  fserver [-h] [-d] [-u] [-o] [-u] [-o] [-i ADDRESS] [-w PATH] [-b PATH] [port]
 
-  positional arguments:
-    port                  Specify alternate port [default: 2000]
+Positional arguments:
+  port                                Specify alternate port [default: 2000]
 
-  optional arguments:
-    -h, --help            show this help message and exit
-    -d, --debug           use debug mode of fserver
-    -i ADDRESS, --ip ADDRESS,
-                          Specify alternate bind address [default: all interfaces]
+Optional arguments:
 
-  arguments of url:
-    m                     get_arg to set the mode of processing method of file
-                          Such as http://localhost:port?m=dv to download the file specified by url
-                          value 'p' to play file with Dplayer
-                          value 'v' to show the file specified by url
-                          value 'dv' to download the file specified by url
+  -h, --help                          Show this help message and exit
+  -d, --debug                         Use debug mode of fserver
+  -u, --upload                        Open upload file function. This function is closed by default
+  -o, --override                      Set upload file with override mode, only valid when [-u] is used
+  -i ADDRESS, --ip ADDRESS            Specify alternate bind address [default: all interfaces]
+  -w PATH, --white PATH               Use white_list mode. Only PATH, sub directory or file, will be share. 
+                                      You can use [-wi PATH], i is num from 1 to 23, to share 24 PATHs at most    
+  -b PATH, --black PATH               Use black_list mode. It's similar to option '-w'    
+  -r PATH, --root PATH                Set PATH as root path for server
 ```
 ### license
 [MIT](LICENSE)

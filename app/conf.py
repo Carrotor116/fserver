@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
-VERSION = '0.0.13'
-BUILD_TIME = '2018/11/14'
+VERSION = '0.0.14'
+BUILD_TIME = '2018/11/17'
 
 DEBUG = False
 

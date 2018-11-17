@@ -2,6 +2,7 @@
 import os
 import posixpath
 import re
+import sys
 
 try:
     from urllib.parse import unquote
@@ -37,7 +38,7 @@ def translate_path(path):
         path = os.path.join(path, word)
     if trailing_slash:
         path += '/'
-    if not isinstance(path, unicode):  # encode by unicode
+    if sys.version_info < (3, 4) and not isinstance(path, unicode):  # encode by unicode
         path = path.decode('utf-8')
     return path
 

@@ -1,13 +1,15 @@
 # -*- coding: utf-8 -*-
+import os
+import signal
 import sys
 
+import gevent
 from gevent.pywsgi import WSGIServer
 
 from app import conf
 from app import path_util
 from app import util
 from app.fserver_app import app as application
-import os
 
 usage_short = 'usage: fserver [-h] [-d] [-u] [-o] [-u] [-o] [-i ADDRESS] [-w PATH] [-b PATH] [-r PATH] [port]'
 usage = '''
@@ -27,7 +29,7 @@ Optional arguments:
   -w PATH, --white PATH               Use white_list mode. Only PATH, sub directory or file, will be share. 
                                       You can use [-wi PATH], i is num from 1 to 23, to share 24 PATHs at most    
   -b PATH, --black PATH               Use black_list mode. It's similar to option '-w'    
-  -r PATH, --root PATH                Set PATH as root path for server    
+  -r PATH, --root PATH                Set PATH as root path for server
  '''
 
 
@@ -207,5 +209,11 @@ class CmdOption:
             [conf.WHITE_LIST_PARENTS.add(i) for i in path_util.parents_path(w)]
 
 
+def quit():
+    print ('Bye')
+    sys.exit(0)
+
+
 if __name__ == '__main__':
+    gevent.signal(signal.SIGINT, quit)
     run_fserver()
