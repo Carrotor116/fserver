@@ -11,13 +11,13 @@ from fserver import path_util
 from fserver import util
 from fserver.fserver_app import app as application
 
-usage_short = 'usage: fserver [-h] [-d] [-u] [-o] [-u] [-o] [-i ADDRESS] [-w PATH] [-b PATH] [-r PATH] [port]'
+usage_short = 'usage: fserver [-h] [-d] [-u] [-o] [-i ADDRESS] [-w PATH] [-b PATH] [-r PATH] [port]'
 usage = '''
 Usage:
-  fserver [-h] [-d] [-u] [-o] [-u] [-o] [-i ADDRESS] [-w PATH] [-b PATH] [port]
+  fserver [-h] [-d] [-u] [-o] [-i ADDRESS] [-w PATH] [-b PATH] [port]
 
 Positional arguments:
-  port                                Specify alternate port [default: 2000]
+  port                                Specify alternate port, default value 2000
 
 Optional arguments:
 
@@ -176,6 +176,8 @@ class CmdOption:
                     p = path_util.to_local_abspath(value)
                     tmp_black_list.add(p)
 
+        if not conf.BIND_PORT.isdigit():
+            raise OptionError('Port must be digit: %s' % conf.BIND_PORT)
         if not os.path.exists(conf.ROOT) or not os.path.isdir(conf.ROOT):
             raise OptionError('Invalid root path: %s' % conf.ROOT)
         try:

@@ -4,17 +4,17 @@ a simple http.server implement with flask and gevent
 
 ### install 
 ```shell
-$ sudo pip install fserver
+$ pip install fserver
 ```
 
 
 ### usage
 ```
 Usage:
-  fserver [-h] [-d] [-u] [-o] [-u] [-o] [-i ADDRESS] [-w PATH] [-b PATH] [port]
+  fserver [-h] [-d] [-u] [-o] [-i ADDRESS] [-w PATH] [-b PATH] [port]
 
 Positional arguments:
-  port                                Specify alternate port [default: 2000]
+  port                                Specify alternate port, default value 2000
 
 Optional arguments:
 
