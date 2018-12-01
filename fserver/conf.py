@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-VERSION = '0.0.16'
+VERSION = '0.0.17'
 BUILD_TIME = '2018/12/01'
 
 DEBUG = False
