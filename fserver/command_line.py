@@ -176,10 +176,13 @@ class CmdOption:
                     p = path_util.to_local_abspath(value)
                     tmp_black_list.add(p)
 
+        conf.ROOT = path_util.to_local_abspath(conf.ROOT)
         if not isinstance(conf.BIND_PORT, int) and not conf.BIND_PORT.isdigit():
             raise OptionError('Port must be digit: %s' % conf.BIND_PORT)
         if not os.path.exists(conf.ROOT) or not os.path.isdir(conf.ROOT):
             raise OptionError('Invalid root path: %s' % conf.ROOT)
+        if not util.is_ip_v4(conf.BIND_IP):
+            raise OptionError('Invalid ip_v4: %s' % conf.BIND_IP)
         try:
             os.chdir(conf.ROOT)
         except OSError:

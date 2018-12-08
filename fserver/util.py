@@ -6,6 +6,7 @@ import re
 import sys
 
 from fserver import conf
+from fserver.path_util import to_unicode_str
 
 
 def debug(*args):
@@ -21,7 +22,8 @@ def pretty_print(file, *args):
     min_len = 40
     msg = ''
     for i in args:
-        msg += str(i) + ' '
+        j = to_unicode_str(i)
+        msg += j + ' '
     msg = '| ' + msg.replace('\n', '\n| ')
     ln = max([len(i) + 3 for i in msg.split('\n')])
     ln = ln if ln > min_len else min_len
@@ -31,41 +33,43 @@ def pretty_print(file, *args):
 
 
 def _get_ip_v4_ipconfig():
-    ips = []
+    ips = set()
     try:
         ip_cmd = os.popen('ipconfig 2>&1').read().split('\n')
-        [ips.append(s[s.index(':') + 2:]) for s in ip_cmd if 'ipv4' in s.lower()]
-        if '127.0.0.1' not in ips:
-            ips.append('127.0.0.1')
+        for line in ip_cmd:
+            if 'ip' not in line.lower():
+                continue
+            [ips.add(i) for i in line.replace('\r', '').split(' ')  # filter ip mask
+             if is_ip_v4(i) and not i.startswith('255') and not i.endswith('.0')]
+        # [ips.append(s[s.index(':') + 2:]) for s in ip_cmd if 'ipv4' in s.lower()]
+        ips.add('127.0.0.1')
     except Exception as e:
         debug(e)
     return ips
 
 
 def _get_ip_v4_ifconfig():
-    ips = []
+    ips = set()
     sh = r"""ifconfig 2>&1 | \
     awk -F '[ :]' 'BEGIN{print "succeed"}/inet /{ for (i=1;i<=NF;i++){ if ($i~/[0-9]\./) {print $i;break }} }' 2>&1 """
     try:
         ip_cmd = os.popen(sh).read()
         if 'succeed' in ip_cmd:
-            ips.extend([i for i in ip_cmd.split('\n') if i != '' and i != 'succeed'])
-        if '127.0.0.1' not in ips:
-            ips.append('127.0.0.1')
+            ips.add([i for i in ip_cmd.split('\n') if i != '' and i != 'succeed'])
+        ips.add('127.0.0.1')
     except Exception as e:
         debug(e)
     return ips
 
 
 def _get_ip_v4_ip_add():
-    ips = []
+    ips = set()
     sh = r"""ip -4 add 2>&1 |awk 'BEGIN{print "succeed"} $2 ~/^[0-9]+\./ {print $2}' | awk -F/ '{print $1}'"""
     try:
         ip_cmd = os.popen(sh).read()
         if 'succeed' in ip_cmd:
-            ips.extend([i for i in ip_cmd.split('\n') if i != '' and i != 'succeed'])
-        if '127.0.0.1' not in ips:
-            ips.append('127.0.0.1')
+            ips.add([i for i in ip_cmd.split('\n') if i != '' and i != 'succeed'])
+        ips.add('127.0.0.1')
     except Exception as e:
         debug(e)
     return ips
@@ -77,8 +81,7 @@ def get_ip_v4():
         ips = _get_ip_v4_ipconfig()
     elif os.name == 'posix':
         ips = _get_ip_v4_ip_add()
-        if len(ips) == 0 or ips is None:
-            ips = _get_ip_v4_ifconfig()
+        [ips.add(i) for i in _get_ip_v4_ipconfig()]
 
     for ip in [i for i in ips]:
         if ip.startswith('169.254.'):

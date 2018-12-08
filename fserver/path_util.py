@@ -29,18 +29,36 @@ def translate_path(path):
         path = unquote(path)
     path = posixpath.normpath(path)
     words = path.split('/')
-    words = filter(None, words)
-    path = os.getcwd()
+    words = [to_unicode_str(i) for i in filter(None, words)]
+    path = to_unicode_str(os.getcwd())
     for word in words:
         if os.path.dirname(word) or word in (os.curdir, os.pardir):
             # Ignore components that are not a simple file/directory name
             continue
-        path = os.path.join(path, word)
+        try:
+            path = os.path.join(path, word)
+        except Exception as e:
+            print(type(path), path)
+            print(type(word), word)
+            raise e
     if trailing_slash:
         path += '/'
-    if sys.version_info < (3, 4) and not isinstance(path, unicode):  # encode by unicode
-        path = path.decode('utf-8')
+    path = to_unicode_str(path)
     return path
+
+
+def to_unicode_str(s):
+    if sys.version_info < (3, 4) and not isinstance(s, unicode):
+        if isinstance(s, str):
+            try:
+                s = s.decode('utf-8')
+            except:
+                s = s.decode('gbk')
+        else:
+            s = unicode(s)
+    elif sys.version_info >= (3, 4) and not isinstance(s, str):
+        s = str(s)
+    return s
 
 
 def to_local_path(path):
