@@ -55,7 +55,7 @@ def _get_ip_v4_ifconfig():
     try:
         ip_cmd = os.popen(sh).read()
         if 'succeed' in ip_cmd:
-            ips.add([i for i in ip_cmd.split('\n') if i != '' and i != 'succeed'])
+            [ips.add(i) for i in ip_cmd.split('\n') if i != '' and i != 'succeed']
         ips.add('127.0.0.1')
     except Exception as e:
         debug(e)
@@ -68,7 +68,7 @@ def _get_ip_v4_ip_add():
     try:
         ip_cmd = os.popen(sh).read()
         if 'succeed' in ip_cmd:
-            ips.add([i for i in ip_cmd.split('\n') if i != '' and i != 'succeed'])
+            [ips.add(i) for i in ip_cmd.split('\n') if i != '' and i != 'succeed']
         ips.add('127.0.0.1')
     except Exception as e:
         debug(e)
@@ -76,7 +76,6 @@ def _get_ip_v4_ip_add():
 
 
 def get_ip_v4():
-    ips = []
     if os.name == 'nt':
         ips = _get_ip_v4_ipconfig()
     elif os.name == 'posix':
