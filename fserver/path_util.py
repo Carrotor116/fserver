@@ -43,8 +43,7 @@ def translate_path(path):
             raise e
     if trailing_slash:
         path += '/'
-    path = to_unicode_str(path)
-    return path
+    return to_unicode_str(path)
 
 
 def to_unicode_str(s):
@@ -190,7 +189,15 @@ def is_child(child_path, parent_path):
     return False
 
 
-def path_exists(path):
+def ls_reg(path):
+    """
+    ```shell
+    $ ls
+    Documents Downloads Pictures Public
+    ```
+    :param path: EXAMPLE( 'Do*'
+    :return:     EXAMPLE( set(['Documents', 'Downloads'])
+    """
     res = set()
     np = normalize_path(path)
     if os.path.exists(np):
@@ -211,10 +218,18 @@ def path_exists(path):
                          .replace(r'*', r'.*') + '$')
     npp = parent_path(np)
     if os.path.exists(npp) and os.path.isdir(npp):
-        for i in os.listdir(npp):
+        for i in listdir(npp):
             if pattern.match(i):
                 res.add(i if file_name == np else npp + '/' + i)
     return res
+
+
+def listdir(path):
+    try:
+        return os.listdir(to_unicode_str(path))
+    except OSError:
+        print("ERROR: path_util.listdir( %s" % path)
+    return []
 
 
 if __name__ == '__main__':

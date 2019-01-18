@@ -44,24 +44,40 @@
             }
         {% endif %}
 
-        .li_select {
-            list-style-type: none;
-        }
-
-        .ul_select {
-            margin-left: 0;
-            margin-right: 0;
+        ul {
+            margin-left: 20px;
+            margin-right: 4px;
             padding-left: 0;
             padding-right: 0;
         }
 
-        .check_box_hide {
+        .hide {
             display: none;
         }
 
         .check_box {
-            margin-left: 20px;
-            margin-right: 2px;
+            height: 13px;
+            width: 13px;
+            display:inline-block;
+        }
+        li {
+            height: 21px;
+            list-style-type:none;
+        }
+        .li_head{
+            width: 20px;
+            height: 20px;
+            display:inline-block;
+            position: relative;
+            text-align: center;
+        }
+        .circle {
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background-color: black;
+            display:inline-block;
+            margin-bottom: 3px;
         }
     </style>
 </head>
@@ -72,7 +88,7 @@
     {% for l in list %}
         <li name="dir_li">
             <label for="cb"></label>
-            <input class="check_box_hide" type="checkbox" name="cb" id="{{ l }}">
+            <span class="li_head" ><span name="crl" class="circle"></span> <input class="hide" type="checkbox" name="cb" id="{{ l }}"></span>
             <a href="{{ l+arg }}">{{ l }}</a>
         </li>
     {% endfor %}
@@ -137,12 +153,6 @@
 
             document.getElementById('select_btn').setAttribute('onclick', "select_mode('off')");
             document.getElementById('select_btn').innerText = 'select_off';
-            document.getElementById('dir_ul').className = 'ul_select';
-            document.getElementsByName('dir_li').forEach(
-                value => {
-                    value.setAttribute('class', 'li_select')
-                }
-            );
             document.getElementsByName('cb').forEach(
                 value => {
                     if (select_all_check_box === -1) {
@@ -154,6 +164,11 @@
                     value.setAttribute('class', 'check_box')
                 }
             );
+            document.getElementsByName('crl').forEach(
+                value => {
+                    value.setAttribute('class', 'hide')
+                }
+            )
         } else {
             batch_down_mode = false;
             document.getElementById('batch_down').disabled = true;
@@ -171,16 +186,16 @@
             document.getElementById('select_btn').setAttribute('onclick', "select_mode('on')");
             document.getElementById('select_btn').innerText = 'select_on ';
             document.getElementById('dir_ul').removeAttribute('class');
-            document.getElementsByName('dir_li').forEach(
-                value => {
-                    value.removeAttribute('class');
-                }
-            );
             document.getElementsByName('cb').forEach(
                 value => {
-                    value.setAttribute('class', 'check_box_hide')
+                    value.setAttribute('class', 'hide')
                 }
-            )
+            );
+            document.getElementsByName('crl').forEach(
+                value => {
+                    value.setAttribute('class', 'circle')
+                }
+            );
         }
     }
 

@@ -19,6 +19,7 @@ from fserver.path_util import is_file
 from fserver.path_util import normalize_path
 from fserver.path_util import parent_path
 from fserver.path_util import translate_path
+from fserver.path_util import listdir
 from fserver.util import debug
 from fserver.util import warning
 
@@ -49,28 +50,14 @@ def do_get(path):
             return play_video(path)
 
     if os.path.exists(path) and path_permission_deny(path):
-        warning('permission deny: ' + path)
+        warning('permission deny: %s' % path)
         return resp_permission_deny(path)
     else:
-        return render_template('error.html', error='No such dir or file: ' + path)
+        return render_template('error.html', error='No such dir or file: %s' % path)
 
 
 def get_root():
-    if len(conf.WHITE_LIST) == 0 and len(conf.BLACK_LIST) == 0:
-        return list_dir('')
-    else:
-        local_path = translate_path('')
-        try:
-            lst = os.listdir(local_path)
-        except OSError:
-            lst = []
-        lst = [i for i in lst if not path_permission_deny(i)]  # check permission
-        lst = [i + '/' if is_dir(local_path + '/' + i) else i for i in lst]  # add '/' to dir
-        return render_template('list.html',
-                               upload=conf.UPLOAD,
-                               path='',
-                               arg=GetArg(request.args).format_for_url(),
-                               list=lst)
+    return list_dir('.')
 
 
 @app.route('/', defaults={'path': ''}, methods=['POST'])
@@ -106,15 +93,13 @@ def list_dir(path):
     local_path = translate_path(path)
     arg = GetArg(request.args)
     if is_dir(local_path) and not path_permission_deny(path):  # dir
-        try:
-            lst = os.listdir(local_path)
-        except OSError:
-            lst = []
+        lst = listdir(local_path)
         lst = [i for i in lst if not path_permission_deny(path + '/' + i)]  # check permission
         lst = [i + '/' if is_dir(local_path + '/' + i) else i for i in lst]  # add '/' to dir
+        lst.sort()
         return render_template('list.html',
                                upload=conf.UPLOAD,
-                               path=path,
+                               path='/' if path == '.' else '/%s' % path,
                                arg=arg.format_for_url(),
                                list=lst)
     return resp_permission_deny(path)
@@ -197,7 +182,7 @@ def path_permission_deny(path):
 
 
 def resp_permission_deny(path):
-    return render_template('error.html', error='Permission deny for such dir or file: ' + path)
+    return render_template('error.html', error='Permission deny for such dir or file: %s' % path)
 
 
 def plus_filename(filename):
@@ -207,7 +192,7 @@ def plus_filename(filename):
     i = 0
     while True:
         i += 1
-        res = prefix + '(' + str(i) + ')'
+        res = '{}({})'.format(prefix, str(i))
         res = res + '.' + suffix if suffix != '' else res
         if not os.path.exists(res):
             return res

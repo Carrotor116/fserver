@@ -141,6 +141,7 @@ class CmdOption:
         tmp_white_list = set()
         tmp_black_list = set()
         for name, value in options.items():
+            value = util.to_unicode_str(value)
             if name in self.OPTIONS['help'][2]:
                 print(usage)
                 sys.exit()
@@ -207,13 +208,15 @@ class CmdOption:
             else:
                 tmp_black_list2.add(p)
         for w in tmp_white_list2:
-            [conf.WHITE_LIST.add(i) for i in path_util.path_exists(w)]
+            [conf.WHITE_LIST.add(i) for i in path_util.ls_reg(w)]
         for b in tmp_black_list2:
-            [conf.BLACK_LIST.add(i) for i in path_util.path_exists(b)]
+            [conf.BLACK_LIST.add(i) for i in path_util.ls_reg(b)]
         # to make sure the prior of black is high than white's.
         [conf.WHITE_LIST.remove(b) for b in conf.BLACK_LIST if b in conf.WHITE_LIST]
         for w in conf.WHITE_LIST:  # init white_list_parents
             [conf.WHITE_LIST_PARENTS.add(i) for i in path_util.parents_path(w)]
+        if len(conf.WHITE_LIST) > 1 and '' in conf.WHITE_LIST:  # make sure to open white mode when '-w' is used
+            conf.WHITE_LIST.remove('')
 
 
 def quit():
