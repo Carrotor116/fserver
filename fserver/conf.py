@@ -23,6 +23,7 @@ BLACK_LIST = set()
 WHITE_LIST = set()
 WHITE_LIST_PARENTS = set()
 ROOT = '.'
+STRING = None
 
 
 def display():
@@ -32,7 +33,8 @@ def display():
    upload                =             {}
    upload_override       =             {}
    root                  =             {}
-   white_list            =             """.format(DEBUG, BIND_IP, BIND_PORT, UPLOAD, UPLOAD_OVERRIDE_MODE, ROOT)
+   string                =             {}
+   white_list            =             """.format(DEBUG, BIND_IP, BIND_PORT, UPLOAD, UPLOAD_OVERRIDE_MODE, ROOT, STRING)
 
     if len(WHITE_LIST) == 0:
         msg += 'turn off '

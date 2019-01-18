@@ -11,7 +11,7 @@ from fserver import path_util
 from fserver import util
 from fserver.fserver_app import app as application
 
-usage_short = 'usage: fserver [-h] [-d] [-u] [-o] [-i ADDRESS] [-w PATH] [-b PATH] [-r PATH] [port]'
+usage_short = 'usage: fserver [-h] [-d] [-u] [-o] [-i ADDRESS] [-s CONTENT] [-w PATH] [-b PATH] [-r PATH] [port]'
 usage = '''
 Usage:
   fserver [-h] [-d] [-u] [-o] [-i ADDRESS] [-w PATH] [-b PATH] [port]
@@ -26,10 +26,11 @@ Optional arguments:
   -u, --upload                        Open upload file function. This function is closed by default
   -o, --override                      Set upload file with override mode, only valid when [-u] is used
   -i ADDRESS, --ip ADDRESS            Specify alternate bind address [default: all interfaces]
+  -r PATH, --root PATH                Set PATH as root path for server
   -w PATH, --white PATH               Use white_list mode. Only PATH, sub directory or file, will be share. 
                                       You can use [-wi PATH], i is num from 1 to 23, to share 24 PATHs at most    
   -b PATH, --black PATH               Use black_list mode. It's similar to option '-w'    
-  -r PATH, --root PATH                Set PATH as root path for server
+  -s CONTENT, --string CONTENT        share string content, while disable the share of file
  '''
 
 
@@ -113,7 +114,8 @@ class CmdOption:
         'ip': ('i:', 'ip=', ['--ip', '-i']),
         'white': ('w:', 'white=', ['--white', '-w']),
         'black': ('b:', 'black=', ['--black', '-b']),
-        'root': ('r:', 'root=', ['--root', '-r'])
+        'root': ('r:', 'root=', ['--root', '-r']),
+        'string': ('s:', 'string=', ['--string', '-s'])
     }
     for i in range(1, 24):
         OPTIONS['white%s' % i] = ('w%s:' % i, 'white%s=' % i, ['--white%s' % i, '-w%s' % i])
@@ -164,6 +166,9 @@ class CmdOption:
             if name in self.OPTIONS['root'][2]:
                 conf.ROOT = path_util.normalize_path(value)
                 continue
+            if name in self.OPTIONS['string'][2]:
+                conf.STRING = value
+                tmp_white_list.add(path_util.to_unicode_str(''))  # disable share file
             for white_opt in self.OPTIONS.keys():
                 if not white_opt.startswith('white'):
                     continue

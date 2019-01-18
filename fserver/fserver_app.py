@@ -57,7 +57,10 @@ def do_get(path):
 
 
 def get_root():
-    return list_dir('.')
+    if conf.STRING is not None:
+        return render_template('string.html', content=conf.STRING)
+    else:
+        return list_dir('.')
 
 
 @app.route('/', defaults={'path': ''}, methods=['POST'])
