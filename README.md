@@ -4,7 +4,7 @@ a simple http.server implemented with flask and gevent
 
 ### install 
 ```shell
-$ pip install fserver
+$ pip install fserver -U
 ```
 
 

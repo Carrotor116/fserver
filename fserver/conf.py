@@ -1,19 +1,20 @@
 # -*- coding: utf-8 -*-
 
-VERSION = '0.0.20'
-BUILD_TIME = '2019/01/18'
+VERSION = '0.0.21'
+BUILD_TIME = '2019/02/02'
 
 DEBUG = False
 
 UPLOAD_OVERRIDE_MODE = False
 UPLOAD = False
 
-VIDEO_SUFFIX = ['mp4', 'flv', 'hls', 'dash']
-CDN_JS = {
+VIDEO_SUFFIX = ['mp4', 'flv', 'hls', 'dash', 'mkv']
+VIDEO_CDN_JS = {
     'flv': '/static/flv.min.js',
     'hls': '/static/hls.js@latest',
     'dash': '/static/dash.all.min.js',
-    'mp4': ''
+    'mp4': '',
+    'mkv': ''
 }
 
 BIND_IP = '0.0.0.0'

@@ -9,17 +9,17 @@ from werkzeug.utils import secure_filename
 
 from fserver import conf
 from fserver.bean import GetArg
-from fserver.conf import CDN_JS
+from fserver.conf import VIDEO_CDN_JS
 from fserver.conf import VIDEO_SUFFIX
 from fserver.path_util import get_filename
 from fserver.path_util import get_suffix
 from fserver.path_util import is_child
 from fserver.path_util import is_dir
 from fserver.path_util import is_file
+from fserver.path_util import listdir
 from fserver.path_util import normalize_path
 from fserver.path_util import parent_path
-from fserver.path_util import translate_path
-from fserver.path_util import listdir
+from fserver.path_util import to_local_abspath
 from fserver.util import debug
 from fserver.util import warning
 
@@ -33,12 +33,12 @@ def do_get(path):
     debug('do_get: path %s,' % path, 'arg is', arg.to_dict())
     if path == '' or path == '/':
         return get_root()
-    local_path = translate_path(path)
+    local_path = to_local_abspath(path)
     if is_dir(local_path):  # 目录
-        return list_dir(path)
+        return list_dir(path) if path.endswith('/') else redirect('/'.join([path, arg.format_for_url()]))
     elif is_file(local_path) and not path_permission_deny(path):  # 文件
         if arg.mode is None or arg.mode == GetArg.MODE_NORMAL:
-            if get_suffix(path) in VIDEO_SUFFIX:
+            if get_suffix(path).lower() in VIDEO_SUFFIX:
                 return play_video(path)
             else:
                 return respond_file(path)
@@ -51,9 +51,7 @@ def do_get(path):
 
     if os.path.exists(path) and path_permission_deny(path):
         warning('permission deny: %s' % path)
-        return resp_permission_deny(path)
-    else:
-        return render_template('error.html', error='No such dir or file: %s' % path)
+    return render_template('error.html', error='Invalid url: %s' % path)
 
 
 def get_root():
@@ -66,19 +64,19 @@ def get_root():
 @app.route('/', defaults={'path': ''}, methods=['POST'])
 @app.route('/<path:path>', methods=['POST'])
 def do_post(path):
-    debug('post_path: %s' % path)
+    debug('do_post: %s' % path)
     if path_permission_deny(path):
-        resp_permission_deny(path)
+        return resp_permission_deny(path)
     if not conf.UPLOAD:
         return redirect(request.url)
     try:
         if 'file' not in request.files:
-            debug('do_post: No file in request')
+            warning('do_post: No file in request')
             return redirect(request.url)
         else:
             request_file = request.files['file']
             filename = secure_filename(request_file.filename)
-            local_path = os.path.join(translate_path(path), filename)
+            local_path = os.path.join(path, filename)
             if os.path.exists(local_path):
                 if not conf.UPLOAD_OVERRIDE_MODE:
                     local_path = plus_filename(local_path)
@@ -87,18 +85,20 @@ def do_post(path):
             res = {'operation': 'upload_file', 'state': 'succeed', 'filename': request_file.filename}
             return jsonify(**res)
     except Exception as e:
-        debug('do_post (error): ', e)
+        warning('do_post : ', e)
         return render_template('error.html', error=e)
 
 
 def list_dir(path):
     debug('list_dir', path)
-    local_path = translate_path(path)
+    local_path = to_local_abspath(path)
     arg = GetArg(request.args)
     if is_dir(local_path) and not path_permission_deny(path):  # dir
         lst = listdir(local_path)
         lst = [i for i in lst if not path_permission_deny(path + '/' + i)]  # check permission
         lst = [i + '/' if is_dir(local_path + '/' + i) else i for i in lst]  # add '/' to dir
+        if local_path != conf.ROOT:
+            lst.append('../')
         lst.sort()
         return render_template('list.html',
                                upload=conf.UPLOAD,
@@ -112,7 +112,7 @@ def respond_file(path, mime=None, as_attachment=False):
     debug('respond_file:', path)
     if is_dir(path):
         return do_get(path)
-    local_path = translate_path(path)
+    local_path = to_local_abspath(path)
     if mime is None or mime not in mimetypes.types_map.values():  # mime 无效
         mime = mimetypes.guess_type(local_path)[0]
         if mime is None:  # 无法获取类型，默认使用 text/plain
@@ -127,20 +127,19 @@ def respond_file(path, mime=None, as_attachment=False):
 
 def play_video(path):
     debug('play_video:', path)
-    if is_dir(translate_path(path)):
+    if is_dir(to_local_abspath(path)):
         return do_get(path)
 
     arg = GetArg(request.args)
-    suffix = get_suffix(path)
+    suffix = get_suffix(path).lower()
     t = suffix if arg.play is None else arg.play
 
-    try:
-        tj = CDN_JS[t]
+    if t in VIDEO_CDN_JS.keys():
+        tj = VIDEO_CDN_JS[t]
         tjs = []
-    except Exception as e:
-        debug('play_video (error):', e, 't:', t)
+    else:
         tj = ''
-        tjs = CDN_JS.values()
+        tjs = VIDEO_CDN_JS.values()
     return render_template('video.html',
                            name=get_filename(path),
                            url='/%s?%s=%s' % (path, GetArg.ARG_MODE, GetArg.MODE_DOWN),
@@ -159,6 +158,9 @@ def path_permission_deny(path):
     DENY = True
     if path == '' or path == '/' or path == 'favicon.ico':
         return not DENY
+    local_abspath = to_local_abspath(path)
+    if not is_child(local_abspath, conf.ROOT) and local_abspath != conf.ROOT:
+        return DENY
     if len(conf.BLACK_LIST) == 0 and len(conf.WHITE_LIST) == 0:  # disable white or black list function
         return not DENY
 
@@ -185,7 +187,7 @@ def path_permission_deny(path):
 
 
 def resp_permission_deny(path):
-    return render_template('error.html', error='Permission deny for such dir or file: %s' % path)
+    return render_template('error.html', error='Invalid url: %s' % path)
 
 
 def plus_filename(filename):

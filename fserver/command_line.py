@@ -14,7 +14,7 @@ from fserver.fserver_app import app as application
 usage_short = 'usage: fserver [-h] [-d] [-u] [-o] [-i ADDRESS] [-s CONTENT] [-w PATH] [-b PATH] [-r PATH] [port]'
 usage = '''
 Usage:
-  fserver [-h] [-d] [-u] [-o] [-i ADDRESS] [-w PATH] [-b PATH] [port]
+  fserver [-h] [-d] [-u] [-o] [-i ADDRESS] [-s CONTENT] [-w PATH] [-b PATH] [-r PATH] [port]
 
 Positional arguments:
   port                                Specify alternate port, default value 2000
@@ -39,7 +39,7 @@ def run_fserver():
     try:
         CmdOption().init_conf(sys.argv[1:])
     except OptionError as e:
-        print('error: {}\n\n{}\n'.format(e.msg, usage_short))
+        print('ERROR: {}\n\n{}\n'.format(e.msg, usage_short))
         sys.exit(-1)
 
     if conf.DEBUG:
@@ -50,7 +50,7 @@ def run_fserver():
         for _ip in ips:
             print('  http://%s:%s' % (_ip, conf.BIND_PORT))
     else:
-        print('  %s:%s' % (conf.BIND_IP, conf.BIND_PORT))
+        print('  http://%s:%s' % (conf.BIND_IP, conf.BIND_PORT))
 
     gevent.signal(signal.SIGINT, quit)
     gevent.signal(signal.SIGTERM, quit)
@@ -78,7 +78,7 @@ def getopt(args, short_opts, long_opts=None):
                 v = ''
                 if has_value:
                     if ind == len(args) - 1:
-                        raise OptionError('error: option %s requires argument' % value)
+                        raise OptionError('ERROR: option %s requires argument' % value)
                     v = args[ind + 1]
                     args[ind + 1] = None
                 options[value] = v
@@ -87,7 +87,7 @@ def getopt(args, short_opts, long_opts=None):
         if recognized:
             args[ind] = None
         elif value.startswith('-') and value != '-' and value != '--':
-            raise OptionError('error: option %s not recognized' % value)
+            raise OptionError('ERROR: option %s not recognized' % value)
 
     none_count = 0
     for v in args:

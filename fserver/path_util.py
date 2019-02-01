@@ -21,8 +21,10 @@ def translate_path(path):
     # abandon query parameters
     path = path.split('?', 1)[0]
     path = path.split('#', 1)[0]
+    path = normalize_path(path)
     # Don't forget explicit trailing slash when normalizing. Issue17324
     trailing_slash = path.rstrip().endswith('/')
+    path = path.rstrip().rstrip('/')
     try:
         path = unquote(path, errors='surrogatepass')
     except Exception as e:
@@ -41,8 +43,8 @@ def translate_path(path):
             print(type(path), path)
             print(type(word), word)
             raise e
-    if trailing_slash:
-        path += '/'
+    if trailing_slash and os.path.isdir(path):
+        path += os.sep
     return to_unicode_str(path)
 
 
@@ -112,6 +114,8 @@ def count(string, pattern):
 
 
 def to_local_abspath(path):
+    path = path.split('?', 1)[0]
+    path = path.split('#', 1)[0]
     path = '.' if path == '' else normalize_path(path)
     return normalize_path(os.path.abspath(path))
 
@@ -122,6 +126,7 @@ def normalize_path(path):
     p = p[2:] if p.startswith('./') else p
     p = re.compile('/+').sub('/', p)
     p = re.compile('/[^./]*?/\.\.').sub('', p)
+    p = p.rstrip('/')
     return p
 
 

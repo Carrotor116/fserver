@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta  name="viewport" content="width=device-width, user-scalable=yes, initial-scale=1.0, minimum-scale=1.0"/>
     <title>dir</title>
     <style>
         .mode-btn {
@@ -14,6 +15,7 @@
             font-size: 16px;
             font-weight: bold;
             margin-left: 6px;
+            outline: none;
         }
 
         .mode-btn:disabled {
@@ -58,11 +60,19 @@
         .check_box {
             height: 13px;
             width: 13px;
+            margin-top: 0;
+            margin-bottom: 0;
+            padding-top: 0;
+            padding-bottom: 0;
             display:inline-block;
         }
         li {
-            height: 21px;
+            min-height: 21px;
             list-style-type:none;
+            white-space:nowrap;
+        }
+        .menu {
+            white-space:nowrap;
         }
         .li_head{
             width: 20px;
@@ -82,12 +92,11 @@
     </style>
 </head>
 <body>
-<h1>Directory listing for {{ path }}</h1>
+<h2>Directory listing for {{ path }}</h2>
 <hr>
 <ul id="dir_ul">
     {% for l in list %}
-        <li name="dir_li">
-            <label for="cb"></label>
+        <li>
             <span class="li_head" ><span name="crl" class="circle"></span> <input class="hide" type="checkbox" name="cb" id="{{ l }}"></span>
             <a href="{{ l+arg }}">{{ l }}</a>
         </li>
@@ -95,11 +104,13 @@
 </ul>
 <hr>
 
-<h3 id="mode"> mode:
+<h3 id="mode" class="menu"> mode:
     <button id="normal_a" class="mode-btn" onclick="changeArg('m', null)">normal</button>
     <button id="txt_a" class="mode-btn" onclick="changeArg('m', 'txt')">display</button>
     <button id="down_a" class="mode-btn" onclick="changeArg('m', 'down')">download</button>
     <button id="play_a" class="mode-btn" onclick="changeArg('m', 'play')">play</button>
+</h3>
+<h3 class="menu"> function:
     <button id="select_btn" class="mode-btn" onclick="select_mode('on')">select_on</button>
     <button id="batch_down" class="mode-btn" disabled onclick="batch_down()">batch_down</button>
     <button id="select_all_btn" class="mode-btn" disabled onclick="toggle_select_all()">select all</button>
