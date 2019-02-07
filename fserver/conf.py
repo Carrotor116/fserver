@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
-VERSION = '0.0.21'
-BUILD_TIME = '2019/02/02'
+VERSION = '0.0.22'
+BUILD_TIME = '2019/02/07'
 
 DEBUG = False
 
@@ -28,7 +28,7 @@ STRING = None
 
 
 def display():
-    msg = """   debug                 =             {}
+    msg = u"""   debug                 =             {}
    ip                    =             {}
    port                  =             {}
    upload                =             {}

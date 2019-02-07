@@ -127,7 +127,7 @@ def normalize_path(path):
     p = re.compile('/+').sub('/', p)
     p = re.compile('/[^./]*?/\.\.').sub('', p)
     p = p.rstrip('/')
-    return p
+    return to_unicode_str(p)
 
 
 def parents_path(path):

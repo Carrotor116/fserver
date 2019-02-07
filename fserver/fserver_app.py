@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import mimetypes
 import os
+from functools import wraps
 
 from flask import Flask, request, redirect, jsonify
 from flask import render_template
@@ -21,13 +22,31 @@ from fserver.path_util import normalize_path
 from fserver.path_util import parent_path
 from fserver.path_util import to_local_abspath
 from fserver.util import debug
+from fserver.util import to_unicode_str
 from fserver.util import warning
 
 app = Flask(__name__, template_folder='templates')
 
 
+def normalize_url(fun):
+    @wraps(fun)
+    def wrapper(path):
+        original_url = to_unicode_str(request.environ['PATH_INFO'])
+        n_url = normalize_path(original_url)
+        n_url = n_url + '/' if original_url.endswith('/') else n_url
+        if original_url != n_url:
+            re_url = n_url if request.environ['QUERY_STRING'] == '' else '?'.join(
+                [n_url, request.environ['QUERY_STRING']])
+            return redirect(re_url)
+        else:
+            return fun(path)
+
+    return wrapper
+
+
 @app.route('/', defaults={'path': ''}, methods=['GET'])
 @app.route('/<path:path>', methods=['GET'])
+@normalize_url
 def do_get(path):
     arg = GetArg(request.args)
     debug('do_get: path %s,' % path, 'arg is', arg.to_dict())
