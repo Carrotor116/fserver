@@ -14,10 +14,10 @@ from fserver import network_util
 from fserver.fogging import colorize, Color
 from fserver.fserver_app import app as application
 
-usage_short = 'usage: fserver [-h] [-d] [-u] [-o] [-i ADDRESS] [-s CONTENT] [-w PATH] [-b PATH] [-r PATH] [port]'
+usage_short = 'usage: fserver [-h] [-d] [-u] [-o] [-n] [-i ADDRESS] [-s CONTENT] [-w PATH] [-b PATH] [-r PATH] [port]'
 usage = '''
 Usage:
-  fserver [-h] [-d] [-u] [-o] [-i ADDRESS] [-s CONTENT] [-w PATH] [-b PATH] [-r PATH] [port]
+  fserver [-h] [-d] [-u] [-o] [-n] [-i ADDRESS] [-s CONTENT] [-w PATH] [-b PATH] [-r PATH] [port]
 
 Positional arguments:
   port                                Specify alternate port, default value 2000
@@ -28,12 +28,13 @@ Optional arguments:
   -d, --debug                         Use debug mode of fserver
   -u, --upload                        Open upload file function. This function is closed by default
   -o, --override                      Set upload file with override mode, only valid when [-u] is used
+  -n, --nosort                        Do not sort the files for list
   -i ADDRESS, --ip ADDRESS            Specify alternate bind address [default: all interfaces]
   -r PATH, --root PATH                Set PATH as root path for server
   -w PATH, --white PATH               Use white_list mode. Only PATH, sub directory or file, will be share. 
                                       You can use [-wi PATH], i is num from 1 to 23, to share 24 PATHs at most    
   -b PATH, --black PATH               Use black_list mode. It's similar to option '-w'    
-  -s CONTENT, --string CONTENT        share string content, while disable the share of file
+  -s CONTENT, --string CONTENT        Share string content, while disable the share of file
  '''
 
 
@@ -73,8 +74,8 @@ class OptionError(Exception):
 def getopt(args, short_opts, long_opts=None):
     if long_opts is None:
         long_opts = []
-    opts_2 = [('-' + i.replace(':', ''), True if i.endswith(':') else False) for i in short_opts]
-    opts_2.extend([('--' + i.replace('=', ''), True if i.endswith('=') else False) for i in long_opts])
+    opts_2 = [('-' + i.replace(':', ''), True if i.endswith(':') else False) for i in short_opts if i is not None]
+    opts_2.extend([('--' + i.replace('=', ''), True if i.endswith('=') else False) for i in long_opts if i is not None])
     options = dict()
     for ind, value in enumerate(args):
         if value is None:
@@ -114,9 +115,10 @@ class CmdOption:
 
     OPTIONS = {
         'help': ('h', 'help', ['--help', '-h']),
-        'debug': ('d', 'debug', ['debug', '-d']),
+        'debug': ('d', 'debug', ['--debug', '-d']),
         'upload': ('u', 'upload', ['--upload', '-u']),
         'override': ('o', 'override', ['--override', '-o']),
+        'nosort': ('n', 'nosort', ['--nosort', '-n']),
         'version': ('v', 'version', ['--version', '-v']),
         'ip': ('i:', 'ip=', ['--ip', '-i']),
         'white': ('w:', 'white=', ['--white', '-w']),
@@ -161,6 +163,9 @@ class CmdOption:
                 continue
             if name in self.OPTIONS['upload'][2]:
                 conf.UPLOAD = True
+                continue
+            if name in self.OPTIONS['nosort'][2]:
+                conf.SORT = False
                 continue
             if name in self.OPTIONS['override'][2]:
                 conf.UPLOAD_OVERRIDE_MODE = True

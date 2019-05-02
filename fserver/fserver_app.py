@@ -117,7 +117,8 @@ def list_dir(path):
         lst = [i + '/' if is_dir(local_path + '/' + i) else i for i in lst]  # add '/' to dir
         if local_path != conf.ROOT:
             lst.append('../')
-        lst.sort()
+        if conf.SORT:
+            lst.sort()
         return render_template('list.html',
                                upload=conf.UPLOAD,
                                path='/' if path == '.' else '/%s' % path,

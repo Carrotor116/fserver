@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
-VERSION = '0.0.22'
-BUILD_TIME = '2019/02/07'
+VERSION = '0.0.23'
+BUILD_TIME = '2019/05/02'
 
 DEBUG = False
 
@@ -26,17 +26,19 @@ WHITE_LIST_PARENTS = set()
 _ROOT = '.'
 ROOT = '.'
 STRING = None
+SORT = True
 
 
 def display():
     msg = u"""   debug                 =             {}
    ip                    =             {}
    port                  =             {}
+   nosort                =             {}
    upload                =             {}
    upload_override       =             {}
    root                  =             {}
    string                =             {}
-   white_list            =             """.format(DEBUG, BIND_IP, BIND_PORT, UPLOAD, UPLOAD_OVERRIDE_MODE,
+   white_list            =             """.format(DEBUG, BIND_IP, BIND_PORT, not SORT, UPLOAD, UPLOAD_OVERRIDE_MODE,
                                                   _ROOT, STRING)
 
     if len(WHITE_LIST) == 0:
