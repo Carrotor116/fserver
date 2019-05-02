@@ -1,3 +1,3 @@
 # -*- coding: utf-8 -*-
 
-from . import fserver_app
+from .fogging import _logger as logger

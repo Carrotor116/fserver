@@ -4,11 +4,14 @@ import signal
 import sys
 
 import gevent
+import logging
 from gevent.pywsgi import WSGIServer
 
 from fserver import conf
+from fserver import logger
 from fserver import path_util
-from fserver import util
+from fserver import network_util
+from fserver.fogging import colorize, Color
 from fserver.fserver_app import app as application
 
 usage_short = 'usage: fserver [-h] [-d] [-u] [-o] [-i ADDRESS] [-s CONTENT] [-w PATH] [-b PATH] [-r PATH] [port]'
@@ -44,18 +47,22 @@ def run_fserver():
 
     if conf.DEBUG:
         conf.display()
+    logger.setLevel(logging.DEBUG if conf.DEBUG else logging.INFO)
     print('fserver is available at following address:')
     if conf.BIND_IP == '0.0.0.0':
-        ips = util.get_ip_v4()
+        ips = network_util.get_ip_v4()
         for _ip in ips:
             print('  http://%s:%s' % (_ip, conf.BIND_PORT))
     else:
         print('  http://%s:%s' % (conf.BIND_IP, conf.BIND_PORT))
 
-    gevent.signal(signal.SIGINT, quit)
-    gevent.signal(signal.SIGTERM, quit)
+    gevent.signal(signal.SIGINT, _quit)
+    gevent.signal(signal.SIGTERM, _quit)
     http_server = WSGIServer((conf.BIND_IP, int(conf.BIND_PORT)), application)
-    http_server.serve_forever()
+    try:
+        http_server.serve_forever()
+    except OSError as e:
+        print(colorize(e, Color.RED))
 
 
 class OptionError(Exception):
@@ -130,8 +137,6 @@ class CmdOption:
 
         try:
             options, args = getopt(string, short_opts, long_opts)
-            util.debug('options', options)
-            util.debug('args', args)
         except OptionError as e:
             print(usage_short)
             print(e.msg)
@@ -143,7 +148,7 @@ class CmdOption:
         tmp_white_list = set()
         tmp_black_list = set()
         for name, value in options.items():
-            value = util.to_unicode_str(value)
+            value = path_util.to_unicode_str(value)
             if name in self.OPTIONS['help'][2]:
                 print(usage)
                 sys.exit()
@@ -164,7 +169,7 @@ class CmdOption:
                 conf.BIND_IP = value
                 continue
             if name in self.OPTIONS['root'][2]:
-                conf.ROOT = path_util.normalize_path(value)
+                conf._ROOT = path_util.normalize_path(value)
                 continue
             if name in self.OPTIONS['string'][2]:
                 conf.STRING = value
@@ -182,17 +187,18 @@ class CmdOption:
                     p = path_util.to_local_abspath(value)
                     tmp_black_list.add(p)
 
-        conf.ROOT = path_util.to_local_abspath(conf.ROOT)
+        conf._ROOT = path_util.to_local_abspath(conf._ROOT)
         if not isinstance(conf.BIND_PORT, int) and not conf.BIND_PORT.isdigit():
             raise OptionError('Port must be digit: %s' % conf.BIND_PORT)
         if not os.path.exists(conf.ROOT) or not os.path.isdir(conf.ROOT):
             raise OptionError('Invalid root path: %s' % conf.ROOT)
-        if not util.is_ip_v4(conf.BIND_IP):
+        if not network_util.is_ip_v4(conf.BIND_IP):
             raise OptionError('Invalid ip_v4: %s' % conf.BIND_IP)
         try:
-            os.chdir(conf.ROOT)
+            os.chdir(conf._ROOT)
+            conf.ROOT = os.getcwd()
         except OSError:
-            raise OptionError('Permission deny for root path: %s' % conf.ROOT)
+            raise OptionError('Permission deny for root path: %s' % conf._ROOT)
 
         conf.WHITE_LIST.clear()
         conf.BLACK_LIST.clear()
@@ -203,13 +209,13 @@ class CmdOption:
         for i in tmp_white_list:
             p = path_util.to_local_path(i)
             if p.startswith('..'):
-                util.warning('Un support parent path: %s' % p)
+                logger.warn('Un support parent path: %s' % p)
             else:
                 tmp_white_list2.add(p)
         for i in tmp_black_list:
             p = path_util.to_local_path(i)
             if p.startswith('..'):
-                util.warning('Un support parent path: %s' % p)
+                logger.warn('Un support parent path: %s' % p)
             else:
                 tmp_black_list2.add(p)
         for w in tmp_white_list2:
@@ -224,8 +230,8 @@ class CmdOption:
             conf.WHITE_LIST.remove('')
 
 
-def quit():
-    print ('Bye')
+def _quit():
+    print('Bye')
     sys.exit(0)
 
 

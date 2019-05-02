@@ -3,33 +3,8 @@ from __future__ import print_function
 
 import os
 import re
-import sys
 
-from fserver import conf
-from fserver.path_util import to_unicode_str
-
-
-def debug(*args):
-    if conf.DEBUG:
-        pretty_print(sys.stdout, *args)
-
-
-def warning(*args):
-    pretty_print(sys.stderr, *args)
-
-
-def pretty_print(file, *args):
-    min_len = 40
-    msg = ''
-    for i in args:
-        j = to_unicode_str(i)
-        msg += j + ' '
-    msg = '| ' + msg.replace('\n', '\n| ')
-    ln = max([len(i) + 3 for i in msg.split('\n')])
-    ln = ln if ln > min_len else min_len
-    print('_' * ln, file=file)
-    print(msg, file=file)
-    print('=' * ln, file=file)
+from . import logger
 
 
 def _get_ip_v4_ipconfig():
@@ -44,7 +19,7 @@ def _get_ip_v4_ipconfig():
         # [ips.append(s[s.index(':') + 2:]) for s in ip_cmd if 'ipv4' in s.lower()]
         ips.add('127.0.0.1')
     except Exception as e:
-        debug(e)
+        logger.debug(e)
     return ips
 
 
@@ -58,7 +33,7 @@ def _get_ip_v4_ifconfig():
             [ips.add(i) for i in ip_cmd.split('\n') if i != '' and i != 'succeed']
         ips.add('127.0.0.1')
     except Exception as e:
-        debug(e)
+        logger.debug(e)
     return ips
 
 
@@ -71,11 +46,12 @@ def _get_ip_v4_ip_add():
             [ips.add(i) for i in ip_cmd.split('\n') if i != '' and i != 'succeed']
         ips.add('127.0.0.1')
     except Exception as e:
-        debug(e)
+        logger.debug(e)
     return ips
 
 
 def get_ip_v4():
+    ips = set()
     if os.name == 'nt':
         ips = _get_ip_v4_ipconfig()
     elif os.name == 'posix':

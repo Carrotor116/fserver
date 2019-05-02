@@ -17,7 +17,7 @@ if conf.DEBUG:
 setup(
     name='fserver',
     version=conf.VERSION,
-    description='a simple http.server implement by flask',
+    description='a simple http.server implemented with flask and gevent',
     url='https://github.com/Carrotor116/fserver',
     author='Nonu',
     author_email='1162365377@qq.com',

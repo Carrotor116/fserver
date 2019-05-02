@@ -8,22 +8,21 @@ from flask import render_template
 from flask import send_from_directory
 from werkzeug.utils import secure_filename
 
-from fserver import conf
-from fserver.bean import GetArg
-from fserver.conf import VIDEO_CDN_JS
-from fserver.conf import VIDEO_SUFFIX
-from fserver.path_util import get_filename
-from fserver.path_util import get_suffix
-from fserver.path_util import is_child
-from fserver.path_util import is_dir
-from fserver.path_util import is_file
-from fserver.path_util import listdir
-from fserver.path_util import normalize_path
-from fserver.path_util import parent_path
-from fserver.path_util import to_local_abspath
-from fserver.util import debug
-from fserver.util import to_unicode_str
-from fserver.util import warning
+from . import conf
+from . import logger
+from .bean import GetArg
+from .conf import VIDEO_CDN_JS
+from .conf import VIDEO_SUFFIX
+from .path_util import get_filename
+from .path_util import get_suffix
+from .path_util import is_child
+from .path_util import is_dir
+from .path_util import is_file
+from .path_util import listdir
+from .path_util import normalize_path
+from .path_util import parent_path
+from .path_util import to_local_abspath
+from .path_util import to_unicode_str
 
 app = Flask(__name__, template_folder='templates')
 
@@ -49,7 +48,7 @@ def normalize_url(fun):
 @normalize_url
 def do_get(path):
     arg = GetArg(request.args)
-    debug('do_get: path %s,' % path, 'arg is', arg.to_dict())
+    logger.debug('do_get: %s, arg(%s)' % (path, arg.to_dict()))
     if path == '' or path == '/':
         return get_root()
     local_path = to_local_abspath(path)
@@ -69,7 +68,7 @@ def do_get(path):
             return play_video(path)
 
     if os.path.exists(path) and path_permission_deny(path):
-        warning('permission deny: %s' % path)
+        logger.warning('permission deny: %s' % path)
     return render_template('error.html', error='Invalid url: %s' % path)
 
 
@@ -83,14 +82,14 @@ def get_root():
 @app.route('/', defaults={'path': ''}, methods=['POST'])
 @app.route('/<path:path>', methods=['POST'])
 def do_post(path):
-    debug('do_post: %s' % path)
+    logger.debug('do_post: %s' % path)
     if path_permission_deny(path):
         return resp_permission_deny(path)
     if not conf.UPLOAD:
         return redirect(request.url)
     try:
         if 'file' not in request.files:
-            warning('do_post: No file in request')
+            logger.warning('do_post: No file in request')
             return redirect(request.url)
         else:
             request_file = request.files['file']
@@ -100,16 +99,16 @@ def do_post(path):
                 if not conf.UPLOAD_OVERRIDE_MODE:
                     local_path = plus_filename(local_path)
             request_file.save(local_path)
-            debug('save file to: %s' % local_path)
+            logger.debug('save file to: %s' % local_path)
             res = {'operation': 'upload_file', 'state': 'succeed', 'filename': request_file.filename}
             return jsonify(**res)
     except Exception as e:
-        warning('do_post : ', e)
+        logger.warning('do_post: %s' % e)
         return render_template('error.html', error=e)
 
 
 def list_dir(path):
-    debug('list_dir', path)
+    logger.debug('list_dir: %s' % path)
     local_path = to_local_abspath(path)
     arg = GetArg(request.args)
     if is_dir(local_path) and not path_permission_deny(path):  # dir
@@ -128,7 +127,7 @@ def list_dir(path):
 
 
 def respond_file(path, mime=None, as_attachment=False):
-    debug('respond_file:', path)
+    logger.debug('respond_file: %s' % path)
     if is_dir(path):
         return do_get(path)
     local_path = to_local_abspath(path)
@@ -145,7 +144,7 @@ def respond_file(path, mime=None, as_attachment=False):
 
 
 def play_video(path):
-    debug('play_video:', path)
+    logger.debug('play_video: %s' % path)
     if is_dir(to_local_abspath(path)):
         return do_get(path)
 
