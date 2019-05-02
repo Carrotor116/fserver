@@ -62,7 +62,7 @@ def run_fserver():
     http_server = WSGIServer((conf.BIND_IP, int(conf.BIND_PORT)), application)
     try:
         http_server.serve_forever()
-    except OSError as e:
+    except Exception as e:
         print(colorize(e, Color.RED))
 
 
