@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-class GetArg:
+
+class GetArg(object):
     ARG_MODE = 'm'
     ARG_PLAY = 'p'
 

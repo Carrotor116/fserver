@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
+
 import os
-import posixpath
 import re
 import sys
 
@@ -8,44 +8,6 @@ try:
     from urllib.parse import unquote
 except:
     from urllib import unquote
-
-
-def translate_path(path):
-    """Translate a /-separated PATH to the local filename syntax.
-
-    Components that mean special things to the local file system
-    (e.g. drive or directory names) are ignored.  (XXX They should
-    probably be diagnosed.)
-
-    """
-    # abandon query parameters
-    path = path.split('?', 1)[0]
-    path = path.split('#', 1)[0]
-    path = normalize_path(path)
-    # Don't forget explicit trailing slash when normalizing. Issue17324
-    trailing_slash = path.rstrip().endswith('/')
-    path = path.rstrip().rstrip('/')
-    try:
-        path = unquote(path, errors='surrogatepass')
-    except Exception as e:
-        path = unquote(path)
-    path = posixpath.normpath(path)
-    words = path.split('/')
-    words = [to_unicode_str(i) for i in filter(None, words)]
-    path = to_unicode_str(os.getcwd())
-    for word in words:
-        if os.path.dirname(word) or word in (os.curdir, os.pardir):
-            # Ignore components that are not a simple file/directory name
-            continue
-        try:
-            path = os.path.join(path, word)
-        except Exception as e:
-            print(type(path), path)
-            print(type(word), word)
-            raise e
-    if trailing_slash and os.path.isdir(path):
-        path += os.sep
-    return to_unicode_str(path)
 
 
 def to_unicode_str(s):
@@ -67,8 +29,8 @@ def to_local_path(path):
     :param path:
     :return: the path relative to current path
     """
-    path = to_local_abspath(path)
-    here = to_local_abspath('.')
+    path = url_path_to_local_abspath(path)
+    here = url_path_to_local_abspath('.')
 
     min_len = len(path) if len(path) < len(here) else len(here)
 
@@ -86,7 +48,7 @@ def to_local_path(path):
         if diff_ind == -1:
             # split the same parent_path
             if len(path) < len(here):  # path is substring of here
-                c = count(here[len(path):], '/')
+                c = here[len(path):].count('/')
                 return '../' * (c + 1)
             elif len(path) > len(here):  # here is substring of path
                 if path[len(here)] == '/':
@@ -99,33 +61,21 @@ def to_local_path(path):
             # sep_ind won't be -1 because the use of local_abspath
             path = path[sep_ind + 1:]
             here = here[sep_ind + 1:]
-            return '../' * (count(here, '/') + 1) + path
+            return '../' * (here.count('/') + 1) + path
 
 
-def count(string, pattern):
-    res = 0
-    while True:
-        if pattern in string:
-            string = string[string.index(pattern) + len(pattern):]
-            res += 1
-        else:
-            break
-    return res
-
-
-def to_local_abspath(path):
+def url_path_to_local_abspath(path):
     path = path.split('?', 1)[0]
     path = path.split('#', 1)[0]
-    path = '.' if path == '' else normalize_path(path)
+    if path == '':
+        path = '.'
     return normalize_path(os.path.abspath(path))
 
 
 def normalize_path(path):
-    p = path.replace('\\', '/').replace('/./', '/')
-    p = p[:len(p) - 1] if p.endswith('/') and len(p) != 1 else p
-    p = p[2:] if p.startswith('./') else p
-    p = re.compile('/+').sub('/', p)
-    p = re.compile('/[^./]*?/\.\.').sub('', p)
+    p = os.path.normpath(path)
+    if os.sep == '\\':
+        p = p.replace('\\', '/')
     p = p.rstrip('/')
     return to_unicode_str(p)
 
@@ -159,14 +109,6 @@ def parent_path(path):
         return path[:sep_ind]
 
 
-def is_dir(local_path):
-    return os.path.isdir(local_path)
-
-
-def is_file(local_path):
-    return os.path.isfile(local_path)
-
-
 def get_filename(path):
     path = normalize_path(path)
     if '/' in path:
@@ -186,11 +128,8 @@ def get_suffix(path):
 def is_child(child_path, parent_path):
     nc = normalize_path(child_path)
     np = normalize_path(parent_path)
-    if len(nc) >= len(np):
-        if nc == np:
-            return True
-        if nc.startswith(np) and nc[len(np)] == '/':
-            return True
+    if len(nc) > len(np) and nc.startswith(np + '/'):
+        return True
     return False
 
 
@@ -239,7 +178,7 @@ def listdir(path):
 
 if __name__ == '__main__':
     print(os.getcwd())
-    print(to_local_abspath('template/'))
+    print(url_path_to_local_abspath('template/'))
     print(to_local_path(os.getcwd() + '/' + '../a/b'))  # ../a/b
     print(to_local_path(os.getcwd() + '/' + 'c/d'))  # c/d
     print(to_local_path(os.getcwd() + '/' + '.'))  # .

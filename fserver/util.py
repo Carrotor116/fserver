@@ -6,30 +6,22 @@ import re
 import sys
 
 from fserver import conf
-from fserver.path_util import to_unicode_str
 
 
 def debug(*args):
     if conf.DEBUG:
-        pretty_print(sys.stdout, *args)
+        pretty_print(sys.stdout, 'debug', *args)
 
 
 def warning(*args):
-    pretty_print(sys.stderr, *args)
+    pretty_print(sys.stderr, 'warning', *args)
 
 
-def pretty_print(file, *args):
-    min_len = 40
-    msg = ''
-    for i in args:
-        j = to_unicode_str(i)
-        msg += j + ' '
-    msg = '| ' + msg.replace('\n', '\n| ')
-    ln = max([len(i) + 3 for i in msg.split('\n')])
-    ln = ln if ln > min_len else min_len
-    print('_' * ln, file=file)
-    print(msg, file=file)
-    print('=' * ln, file=file)
+def pretty_print(file, level, *args):
+    level = level.upper()
+    msg = ' '.join(str(_) for _ in args)
+    msg = msg.replace('\n', '{}: '.format(level))
+    print('{}: '.format(level) + msg, file=file)
 
 
 def _get_ip_v4_ipconfig():
@@ -79,8 +71,9 @@ def get_ip_v4():
     if os.name == 'nt':
         ips = _get_ip_v4_ipconfig()
     elif os.name == 'posix':
-        ips = _get_ip_v4_ip_add()
-        [ips.add(i) for i in _get_ip_v4_ipconfig()]
+        ips = _get_ip_v4_ip_add() | _get_ip_v4_ipconfig()
+    else:
+        raise RuntimeError('un support os: {}'.format(os.name))
 
     for ip in [i for i in ips]:
         if ip.startswith('169.254.'):

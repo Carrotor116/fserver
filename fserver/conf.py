@@ -1,12 +1,15 @@
 # -*- coding: utf-8 -*-
 
-VERSION = '0.0.22'
-BUILD_TIME = '2019/02/07'
+VERSION = '0.0.3'
+BUILD_TIME = '2020/07/25'
 
 DEBUG = False
-
 UPLOAD_OVERRIDE_MODE = False
 UPLOAD = False
+BIND_IP = '0.0.0.0'
+BIND_PORT = 2000
+ROOT = '.'
+STRING = None
 
 VIDEO_SUFFIX = ['mp4', 'flv', 'hls', 'dash', 'mkv']
 VIDEO_CDN_JS = {
@@ -17,49 +20,30 @@ VIDEO_CDN_JS = {
     'mkv': ''
 }
 
-BIND_IP = '0.0.0.0'
-BIND_PORT = 2000
-
 BLACK_LIST = set()
 WHITE_LIST = set()
 WHITE_LIST_PARENTS = set()
-ROOT = '.'
-STRING = None
 
 
-def display():
-    msg = u"""   debug                 =             {}
-   ip                    =             {}
-   port                  =             {}
-   upload                =             {}
-   upload_override       =             {}
-   root                  =             {}
-   string                =             {}
-   white_list            =             """.format(DEBUG, BIND_IP, BIND_PORT, UPLOAD, UPLOAD_OVERRIDE_MODE, ROOT, STRING)
-
-    if len(WHITE_LIST) == 0:
-        msg += 'turn off '
-    else:
-        for ind, v in enumerate(WHITE_LIST):
-            if ind == 0:
-                msg += v + ','
+def debug_msg(args):
+    cfg = args.__dict__
+    keys = sorted(cfg.keys())
+    msg = ['=' * 45]
+    for k in keys:
+        v = cfg[k]
+        tmp = k + ' ' * (22 - len(k)) + '=' + ' ' * 12
+        if not isinstance(v, (list, tuple, set)):
+            tmp += str(v)
+        else:
+            if isinstance(v, set):
+                v = tuple(v)
+            if len(v) == 0:
+                _ = 'None'
+            elif len(v) == 1:
+                _ = str(v[0])
             else:
-                msg += '\n' + ' ' * 39 + v + ','
-
-    msg += '\b\n   black_list            =             '
-    if len(BLACK_LIST) == 0:
-        msg += 'turn off '
-    else:
-        for ind, v in enumerate(BLACK_LIST):
-            if ind == 0:
-                msg += v + ','
-            else:
-                msg += '\n' + ' ' * 39 + v + ','
-
-    max_len = 0
-    for i in msg.split('\n'):
-        if len(i) > max_len:
-            max_len = len(i)
-    line = '=' * (max_len + 3)
-    msg = line + '\n' + msg + '\b\n' + line
-    print(msg)
+                _ = (',\n' + ' ' * 35).join(str(__) for __ in v)
+            tmp += _
+        msg.append(tmp)
+    msg.append('=' * 45)
+    return '\n'.join(msg)
