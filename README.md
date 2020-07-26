@@ -30,6 +30,7 @@ optional arguments:
                         run with block_list. [PATH ...] will not be accessed
   -s STRING, --string STRING
                         share string only
+  -v, --version         print version info
 ```
 
 

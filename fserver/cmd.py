@@ -33,6 +33,8 @@ def args():
                         help='run with block_list. [PATH ...] will not be accessed')
     parser.add_argument('-s', '--string', default=conf.STRING,
                         help='share string only')
+    parser.add_argument('-v', '--version', action='store_true',
+                        help='print version info')
 
     return parser
 
@@ -40,6 +42,11 @@ def args():
 def run_fserver():
     _conf = args().parse_args()
     _conf.root = path_util.normalize_path(_conf.root)
+
+    if _conf.version:
+        msg = 'fserver {} build at {}\nPython {}'.format(conf.VERSION, conf.BUILD_TIME, sys.version)
+        print(msg)
+        sys.exit()
 
     conf.DEBUG = _conf.debug
     conf.UPLOAD = _conf.upload
@@ -57,9 +64,9 @@ def run_fserver():
             fn = os.path.abspath(_fn)
             if fn.startswith(_root_dir):
                 _ = path_util.normalize_path(fn[len(_root_dir):])
-                conf.WHITE_LIST.add(_)
+                conf.ALLOW_LIST.add(_)
                 for __ in path_util.parents_path(_):
-                    conf.WHITE_LIST_PARENTS.add(path_util.normalize_path(__))
+                    conf.ALLOW_LIST_PARENTS.add(path_util.normalize_path(__))
 
     for _bfn in _conf.block:
         bfn = path_util.normalize_path(_bfn)
@@ -67,18 +74,18 @@ def run_fserver():
         for _fn in fns:
             fn = os.path.abspath(_fn)
             if fn.startswith(_root_dir):
-                conf.BLACK_LIST.add(path_util.normalize_path(fn[len(_root_dir):]))
-    _conf.allow = conf.WHITE_LIST
-    _conf.block = conf.BLACK_LIST
+                conf.BLOCK_LIST.add(path_util.normalize_path(fn[len(_root_dir):]))
+    _conf.allow = conf.ALLOW_LIST
+    _conf.block = conf.BLOCK_LIST
     u = _conf.allow and _conf.block
     if len(u) > 0:
         print('a path should not be in allow list and block list at the same time: \n{}'.format(list(u)))
         exit()
 
     if conf.STRING is not None:
-        conf.WHITE_LIST.clear()
-        conf.WHITE_LIST.add('')
-        conf.WHITE_LIST_PARENTS.clear()
+        conf.ALLOW_LIST.clear()
+        conf.ALLOW_LIST.add('')
+        conf.ALLOW_LIST_PARENTS.clear()
 
     try:
         os.chdir(conf.ROOT)

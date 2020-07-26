@@ -35,7 +35,7 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            'fserver=fserver:command_line.run_fserver'
+            'fserver=fserver:cmd.run_fserver'
         ]
     }
 )

@@ -20,9 +20,9 @@ VIDEO_CDN_JS = {
     'mkv': ''
 }
 
-BLACK_LIST = set()
-WHITE_LIST = set()
-WHITE_LIST_PARENTS = set()
+BLOCK_LIST = set()
+ALLOW_LIST = set()
+ALLOW_LIST_PARENTS = set()
 
 
 def debug_msg(args):

@@ -6,8 +6,8 @@ from fserver.path_util import url_path_to_local_abspath
 
 def path_permission_deny(path):
     """
-    note that prior of black list is high than one of white list,
-    that is, even path is sub of white list, path will be denied if path is in black or black' sub path
+    note that prior of block_list is high than one of allow_list,
+    that is, even path is sub of allow_list, path will be denied if path is in block_list or block_list' sub path
     :param path:
     :return:
     """
@@ -20,25 +20,25 @@ def path_permission_deny(path):
     if not is_child(local_abspath, conf.ROOT) and local_abspath != conf.ROOT:
         return DENY
 
-    if len(conf.BLACK_LIST) == 0 and len(conf.WHITE_LIST) == 0:  # disable white or black list function
+    if len(conf.BLOCK_LIST) == 0 and len(conf.ALLOW_LIST) == 0:  # disable allow or block list function
         return ALLOW
 
     np = normalize_path(path)
-    if len(conf.WHITE_LIST) > 0:  # white mode
-        if np in conf.WHITE_LIST_PARENTS or np in conf.WHITE_LIST:  # path is white or parent of white
+    if len(conf.ALLOW_LIST) > 0:  # allow_list mode
+        if np in conf.ALLOW_LIST_PARENTS or np in conf.ALLOW_LIST:  # path is allow or parent of allow_list
             return ALLOW
 
-        for w in conf.WHITE_LIST:
+        for w in conf.ALLOW_LIST:
             if is_child(np, w):
-                for b in conf.BLACK_LIST:
+                for b in conf.BLOCK_LIST:
                     if is_child(np, b) or np == b:
                         return DENY
-                return ALLOW  # path is child of white and not child of black
-        return DENY  # define white_list while path not satisfy white_list
+                return ALLOW  # path is child of allow_list and not child of block_list
+        return DENY  # define ALLOW_LIST while path not satisfy ALLOW_LIST
 
-    if len(conf.BLACK_LIST) > 0:  # black mode
-        for b in conf.BLACK_LIST:
+    if len(conf.BLOCK_LIST) > 0:  # block_list mode
+        for b in conf.BLOCK_LIST:
             if is_child(np, b) or np == b:
-                return DENY  # path is in black list.
+                return DENY  # path is in block_list
         return ALLOW
     return DENY
