@@ -20,13 +20,19 @@ try:
 except ImportError:
     install_requires.append('scandir >= 1.0.0')
 
+
+with open('README.md', 'r') as fr:
+    long_description = fr.read()
+
 setup(
     name='fserver',
     version=conf.VERSION,
-    description='a simple http.server implement by flask',
+    description='File Sharing Server implemented with flask and gevent',
+    long_description=long_description,
+    long_description_content_type="text/markdown",
     url='https://github.com/Carrotor116/fserver',
     author='Nonu',
-    author_email='1162365377@qq.com',
+    author_email='carrotor116@gmail.com',
     license='MIT',
     packages=['fserver'],
     install_requires=install_requires,
@@ -35,7 +41,7 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            'fserver=fserver:cmd.run_fserver'
+            'fserver=fserver.cmd:run_fserver'
         ]
     }
 )
