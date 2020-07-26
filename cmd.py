@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from fserver.command_line import run_fserver
+from fserver.cmd import run_fserver
 
 
 if __name__ == '__main__':

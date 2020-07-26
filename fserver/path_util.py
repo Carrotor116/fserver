@@ -9,6 +9,11 @@ try:
 except:
     from urllib import unquote
 
+try:
+    from os import scandir
+except:
+    from scandir import scandir
+
 
 def to_unicode_str(s):
     if sys.version_info < (3, 4) and not isinstance(s, unicode):
@@ -162,18 +167,15 @@ def ls_reg(path):
                          .replace(r'*', r'.*') + '$')
     npp = parent_path(np)
     if os.path.exists(npp) and os.path.isdir(npp):
-        for i in listdir(npp):
+        for entry in listdir(npp):
+            i = entry.name
             if pattern.match(i):
                 res.add(i if file_name == np else npp + '/' + i)
     return res
 
 
 def listdir(path):
-    try:
-        return os.listdir(to_unicode_str(path))
-    except OSError:
-        print("ERROR: path_util.listdir( %s" % path)
-    return []
+    return scandir(to_unicode_str(path))
 
 
 if __name__ == '__main__':

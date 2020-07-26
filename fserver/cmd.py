@@ -97,8 +97,8 @@ def run_fserver():
     else:
         print('  http://%s:%s' % (conf.BIND_IP, conf.BIND_PORT))
 
-    gevent.signal(signal.SIGINT, quit)
-    gevent.signal(signal.SIGTERM, quit)
+    gevent.signal_handler(signal.SIGINT, quit)
+    gevent.signal_handler(signal.SIGTERM, quit)
     http_server = WSGIServer((conf.BIND_IP, int(conf.BIND_PORT)), application)
     http_server.serve_forever()
 

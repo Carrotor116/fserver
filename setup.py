@@ -14,6 +14,12 @@ if conf.DEBUG:
     print('debug mode is open by default')
     sys.exit(-1)
 
+install_requires = ['Flask >= 1.1.2', 'gevent >= 20.6.2']
+try:
+    from os import scandir
+except ImportError:
+    install_requires.append('scandir >= 1.0.0')
+
 setup(
     name='fserver',
     version=conf.VERSION,
@@ -23,7 +29,7 @@ setup(
     author_email='1162365377@qq.com',
     license='MIT',
     packages=['fserver'],
-    install_requires=['Flask >= 1.0.2', 'gevent >= 1.3.6'],
+    install_requires=install_requires,
     package_data={
         '': ['templates/*.html', 'static/*']
     },

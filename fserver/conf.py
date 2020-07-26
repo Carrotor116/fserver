@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 VERSION = '0.0.3'
-BUILD_TIME = '2020/07/25'
+BUILD_TIME = '2020/07/26'
 
 DEBUG = False
 UPLOAD_OVERRIDE_MODE = False
