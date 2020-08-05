@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta  name="viewport" content="width=device-width, user-scalable=yes, initial-scale=1.0, minimum-scale=1.0"/>
+    <meta name="viewport" content="width=device-width, user-scalable=yes, initial-scale=1.0, minimum-scale=1.0"/>
     <title>dir</title>
     <style>
         .mode-btn {
@@ -64,29 +64,33 @@
             margin-bottom: 0;
             padding-top: 0;
             padding-bottom: 0;
-            display:inline-block;
+            display: inline-block;
         }
+
         li {
             min-height: 21px;
-            list-style-type:none;
-            white-space:nowrap;
+            list-style-type: none;
+            white-space: nowrap;
         }
+
         .menu {
-            white-space:nowrap;
+            white-space: nowrap;
         }
-        .li_head{
+
+        .li_head {
             width: 20px;
             height: 20px;
-            display:inline-block;
+            display: inline-block;
             position: relative;
             text-align: center;
         }
+
         .circle {
             width: 5px;
             height: 5px;
             border-radius: 50%;
             background-color: black;
-            display:inline-block;
+            display: inline-block;
             margin-bottom: 3px;
         }
     </style>
@@ -97,8 +101,9 @@
 <ul id="dir_ul">
     {% for l in list %}
         <li>
-            <span class="li_head" ><span name="crl" class="circle"></span> <input class="hide" type="checkbox" name="cb" id="{{ l }}"></span>
-            <a href="{{ l+arg }}">{{ l }}</a>
+            <span class="li_head"><span name="crl" class="circle"></span> <input class="hide" type="checkbox" name="cb"
+                                                                                 id="{{ l }}"></span>
+            <a href="{{ l|urlencode + arg }}">{{ l }}</a>
         </li>
     {% endfor %}
 </ul>
@@ -110,11 +115,14 @@
     <button id="down_a" class="mode-btn" onclick="changeArg('m', 'down')">download</button>
     <button id="play_a" class="mode-btn" onclick="changeArg('m', 'play')">play</button>
 </h3>
+
 <h3 class="menu"> function:
     <button id="select_btn" class="mode-btn" onclick="select_mode('on')">select_on</button>
     <button id="batch_down" class="mode-btn" disabled onclick="batch_down()">batch_down</button>
     <button id="select_all_btn" class="mode-btn" disabled onclick="toggle_select_all()">select all</button>
 </h3>
+
+
 <script type="text/javascript">
 
     // for batch down

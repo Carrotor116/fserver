@@ -7,6 +7,7 @@ from functools import wraps
 from flask import Flask, request, redirect, jsonify
 from flask import render_template
 from flask import send_from_directory
+from markupsafe import Markup
 from werkzeug.utils import secure_filename
 
 from fserver import conf
@@ -22,6 +23,11 @@ from fserver.path_util import to_unicode_str
 from fserver.path_util import url_path_to_local_abspath
 from fserver.permission import path_permission_deny
 from fserver.util import debug, warning
+
+try:
+    from urllib.parse import unquote, quote
+except:
+    from urllib import unquote, quote
 
 app = Flask(__name__, template_folder='templates')
 
@@ -63,7 +69,7 @@ def do_get(path):
         if path.endswith('/'):
             return list_dir(path, arg)
         else:
-            redirect('/'.join([path, arg.format_for_url()]))
+            return redirect('/'.join((path, arg.format_for_url())))
 
     elif os.path.isfile(local_path):
         if arg.mode == GetArg.MODE_TXT:
@@ -74,7 +80,7 @@ def do_get(path):
             return play_video(path, arg)
         else:
             if get_suffix(local_path).lower() in VIDEO_SUFFIX:
-                return play_video(local_path, arg)
+                return play_video(path, arg)
             else:
                 return respond_file(path)
 
@@ -107,6 +113,7 @@ def do_post(path):
             debug('save file to: %s' % local_path)
             res = {'operation': 'upload_file', 'state': 'succeed', 'filename': request_file.filename}
             return jsonify(**res)
+
     except Exception as e:
         warning('do_post : ', e)
         return render_template('error.html', error=e)
@@ -179,7 +186,7 @@ def play_video(path, arg):
         tjs = VIDEO_CDN_JS.values()
     return render_template('video.html',
                            name=get_filename(path),
-                           url='/%s?%s=%s' % (path, GetArg.ARG_MODE, GetArg.MODE_DOWN),
+                           url='/%s?%s=%s' % (urlencode_filter(path), GetArg.ARG_MODE, GetArg.MODE_DOWN),
                            type=t,
                            typejs=tj,
                            typejss=tjs)
@@ -200,3 +207,12 @@ def plus_filename(filename):
         res = res + '.' + suffix if suffix != '' else res
         if not os.path.exists(res):
             return res
+
+
+@app.template_filter('urlencode')
+def urlencode_filter(s):
+    if type(s) == 'Markup':
+        s = s.unescape()
+    s = s.encode('utf8')
+    s = quote(s)
+    return Markup(s)

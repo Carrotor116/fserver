@@ -5,11 +5,6 @@ import re
 import sys
 
 try:
-    from urllib.parse import unquote
-except:
-    from urllib import unquote
-
-try:
     from os import scandir
 except:
     from scandir import scandir
@@ -70,8 +65,8 @@ def to_local_path(path):
 
 
 def url_path_to_local_abspath(path):
-    path = path.split('?', 1)[0]
-    path = path.split('#', 1)[0]
+    # path = path.split('?', 1)[0]  # char `#` and `?` in path is a part of file not
+    # path = path.split('#', 1)[0]  # special char of url_encode
     if path == '':
         path = '.'
     return normalize_path(os.path.abspath(path))
