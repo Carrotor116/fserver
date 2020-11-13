@@ -8,7 +8,6 @@ from flask import Flask, request, redirect, jsonify
 from flask import render_template
 from flask import send_from_directory
 from markupsafe import Markup
-from werkzeug.utils import secure_filename
 
 from fserver import conf
 from fserver.bean import GetArg
@@ -19,6 +18,7 @@ from fserver.path_util import get_suffix
 from fserver.path_util import listdir
 from fserver.path_util import normalize_path
 from fserver.path_util import parent_path
+from fserver.path_util import secure_filename
 from fserver.path_util import to_unicode_str
 from fserver.path_util import url_path_to_local_abspath
 from fserver.permission import path_permission_deny
