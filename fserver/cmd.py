@@ -9,6 +9,7 @@ from gevent.pywsgi import WSGIServer
 
 from fserver import conf
 from fserver import path_util
+from fserver import permission
 from fserver import util
 from fserver.fserver_app import app as application
 
@@ -24,7 +25,7 @@ def args():
     parser.add_argument('-i', '--ip', default=conf.BIND_IP,
                         help='ip address for listening, default {}'.format(conf.BIND_IP))
     parser.add_argument('-p', '--port', type=int, default=conf.BIND_PORT,
-                        help='port for listening, default 2000')
+                        help='port for listening, default {}'.format(conf.BIND_PORT))
     parser.add_argument('-r', '--root', metavar='PATH', default=conf.ROOT,
                         help='root path for server, default current path')
     parser.add_argument('-a', '--allow', nargs='+', metavar='PATH', default=tuple(),
@@ -46,7 +47,7 @@ def run_fserver():
     if _conf.version:
         msg = 'fserver {} build at {}\nPython {}'.format(conf.VERSION, conf.BUILD_TIME, sys.version)
         print(msg)
-        sys.exit()
+        sys.exit(0)
 
     conf.DEBUG = _conf.debug
     conf.UPLOAD = _conf.upload
@@ -56,51 +57,45 @@ def run_fserver():
     conf.STRING = _conf.string
     conf.ROOT = path_util.normalize_path(os.path.abspath(_conf.root))
 
-    _root_dir = os.path.abspath(conf.ROOT) + os.sep
-    for _afn in _conf.allow:
-        afn = path_util.normalize_path(_afn)
-        fns = path_util.ls_reg(afn)
-        for _fn in fns:
-            fn = os.path.abspath(_fn)
-            if fn.startswith(_root_dir):
-                _ = path_util.normalize_path(fn[len(_root_dir):])
-                conf.ALLOW_LIST.add(_)
-                for __ in path_util.parents_path(_):
-                    conf.ALLOW_LIST_PARENTS.add(path_util.normalize_path(__))
+    trees = []
+    lsts = []
+    for __ in (_conf.allow, _conf.block):
+        _lst = set()
+        for _afn in __:
+            _afn = path_util.url_path_to_local_abspath(_afn)
+            if not _afn.startswith(conf.ROOT):
+                continue
+            _afn = _afn[len(conf.ROOT):]
+            if len(_afn) == 0 or _afn.startswith('/'):  # make sure that `_afn` in `conf.ROOT`
+                _lst.add(_afn[1:])
+        trees.append(permission.build_path_tree(conf.ROOT, _lst))
+        lsts.append(_lst)
 
-    for _bfn in _conf.block:
-        bfn = path_util.normalize_path(_bfn)
-        fns = path_util.ls_reg(bfn)
-        for _fn in fns:
-            fn = os.path.abspath(_fn)
-            if fn.startswith(_root_dir):
-                conf.BLOCK_LIST.add(path_util.normalize_path(fn[len(_root_dir):]))
-    _conf.allow = conf.ALLOW_LIST
-    _conf.block = conf.BLOCK_LIST
-    u = _conf.allow and _conf.block
+    conf.ALLOW_TREE, conf.BLOCK_TREE = trees
+    _conf.allow, _conf.block = trees
+
+    allow_list, block_list = lsts
+    u = allow_list & block_list
     if len(u) > 0:
+        print(lsts)
         print('a path should not be in allow list and block list at the same time: \n{}'.format(list(u)))
-        exit()
-
-    if conf.STRING is not None:
-        conf.ALLOW_LIST.clear()
-        conf.ALLOW_LIST.add('')
-        conf.ALLOW_LIST_PARENTS.clear()
+        sys.exit(-1)
 
     try:
         os.chdir(conf.ROOT)
     except:
         print('invalid root: {}'.format(conf.ROOT))
-        exit(-1)
+        sys.exit(-1)
+
+    if conf.STRING is not None:
+        conf.ALLOW_TREE = permission.build_path_tree([""])
 
     if conf.DEBUG:
         print(conf.debug_msg(_conf))
 
     print('fserver is available at following address:')
     if conf.BIND_IP == '0.0.0.0':
-        ips = util.get_ip_v4()
-        for _ip in ips:
-            print('  http://%s:%s' % (_ip, conf.BIND_PORT))
+        print('\n'.join('  http://%s:%s' % (_ip, conf.BIND_PORT) for _ip in util.get_ip_v4()))
     else:
         print('  http://%s:%s' % (conf.BIND_IP, conf.BIND_PORT))
 

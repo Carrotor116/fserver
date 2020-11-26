@@ -3,14 +3,14 @@
 File Sharing Server implemented with flask and gevent
 
 
-### install 
+### Install or Upgrade 
 
 ```shell
 $ pip install fserver -U
 ```
 
 
-### usage 
+### Usage 
 
 ```text
 usage: fserver [-h] [-d] [-u] [-o] [-i IP] [-p PORT] [-r PATH]
@@ -33,6 +33,26 @@ optional arguments:
   -v, --version         print version info
 ```
 
+### Match Rule
 
-### license
+argument for `-a` and `-b` support wildcards "\*" and "\*\*". 
+
+"*" match multiple arbitrary character in a file name or directory name.
+
+"**" match arbitrary multi-Level directories.
+
+**example:** 
+
+|          | */a2 | *1/a2 | b1/* | **/an | b1/** |
+| -------- | ---- | ----- | ---- | ----- | ----- |
+| a1/a2    | yes  | yes   |      |       |       |
+| a1/an    |      |       |      | yes   |       |
+| a1/a2/an |      |       |      | yes   |       |
+| b1/a2    | yes  | yes   | yes  |       | yes   |
+| b1/a2/an |      |       |      | yes   | yes   |
+
+
+
+
+### License
 [MIT](LICENSE)

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
-VERSION = '0.1.2'
-BUILD_TIME = '2020/11/13'
+VERSION = '0.1.3'
+BUILD_TIME = '2020/11/26'
 
 DEBUG = False
 UPLOAD_OVERRIDE_MODE = False
@@ -20,9 +20,8 @@ VIDEO_CDN_JS = {
     'mkv': ''
 }
 
-BLOCK_LIST = set()
-ALLOW_LIST = set()
-ALLOW_LIST_PARENTS = set()
+ALLOW_TREE = None
+BLOCK_TREE = None
 
 
 def debug_msg(args):

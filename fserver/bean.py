@@ -8,14 +8,16 @@ class GetArg(object):
     MODE_TXT = 'txt'
     MODE_VIDEO = 'play'
     MODE_DOWN = 'down'
-    MODES = [MODE_NORMAL, MODE_TXT, MODE_VIDEO, MODE_DOWN]
+    MODES = (MODE_NORMAL, MODE_TXT, MODE_VIDEO, MODE_DOWN)
 
     PLAY_AUTO = 'auto'
     PLAY_MP4 = 'mp4'
     PLAY_FLV = 'flv'
     PLAY_HLS = 'hls'
     PLAY_DASH = 'dash'
-    PLAYS = [PLAY_AUTO, PLAY_MP4, PLAY_FLV, PLAY_HLS, PLAY_DASH]
+    PLAYS = (PLAY_AUTO, PLAY_MP4, PLAY_FLV, PLAY_HLS, PLAY_DASH)
+
+    __slots__ = 'mode', 'play'
 
     def __init__(self, request_arg=None):
         self.mode = None

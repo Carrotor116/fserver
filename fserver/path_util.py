@@ -26,46 +26,6 @@ def to_unicode_str(s):
     return s
 
 
-def to_local_path(path):
-    """
-    :param path:
-    :return: the path relative to current path
-    """
-    path = url_path_to_local_abspath(path)
-    here = url_path_to_local_abspath('.')
-
-    min_len = len(path) if len(path) < len(here) else len(here)
-
-    if os.name == 'nt' and path[0] != here[0]:
-        return path
-    else:
-        sep_ind = -1
-        diff_ind = -1
-        for i in range(min_len):
-            if here[i] != path[i]:
-                diff_ind = i
-                break
-            if here[i] == '/':
-                sep_ind = i
-        if diff_ind == -1:
-            # split the same parent_path
-            if len(path) < len(here):  # path is substring of here
-                c = here[len(path):].count('/')
-                return '../' * (c + 1)
-            elif len(path) > len(here):  # here is substring of path
-                if path[len(here)] == '/':
-                    return path[len(here) + 1:]
-                else:
-                    return '../' + path[len(parent_path(here)) + 1:]
-            else:  # here is the same with path
-                return '.'
-        else:
-            # sep_ind won't be -1 because the use of local_abspath
-            path = path[sep_ind + 1:]
-            here = here[sep_ind + 1:]
-            return '../' * (here.count('/') + 1) + path
-
-
 def url_path_to_local_abspath(path):
     # path = path.split('?', 1)[0]  # char `#` and `?` in path is a part of file not
     # path = path.split('#', 1)[0]  # special char of url_encode
@@ -133,42 +93,6 @@ def is_child(child_path, parent_path):
     if len(nc) > len(np) and nc.startswith(np + '/'):
         return True
     return False
-
-
-def ls_reg(path):
-    """
-    ```shell
-    $ ls
-    Documents Downloads Pictures Public
-    ```
-    :param path: EXAMPLE( 'Do*'
-    :return:     EXAMPLE( set(['Documents', 'Downloads'])
-    """
-    res = set()
-    np = normalize_path(path)
-    if os.path.exists(np):
-        res.add(np)
-        return res
-    file_name = np if '/' not in np else np[np.rindex('/') + 1:]
-    pattern = re.compile(file_name.replace('\\', r'\\')
-                         .replace(r'$', r'\$')
-                         .replace(r'(', r'\(')
-                         .replace(r')', r'\)')
-                         .replace(r'+', r'\+')
-                         .replace(r'.', r'\.')
-                         .replace(r'[', r'\[')
-                         .replace(r'?', r'\?')
-                         .replace(r'^', r'\^')
-                         .replace(r'{', r'\{')
-                         .replace(r'|', r'\|')
-                         .replace(r'*', r'.*') + '$')
-    npp = parent_path(np)
-    if os.path.exists(npp) and os.path.isdir(npp):
-        for entry in listdir(npp):
-            i = entry.name
-            if pattern.match(i):
-                res.add(i if file_name == np else npp + '/' + i)
-    return res
 
 
 def listdir(path):
@@ -251,10 +175,3 @@ def secure_filename(filename):
 
 if __name__ == '__main__':
     print(os.getcwd())
-    print(url_path_to_local_abspath('template/'))
-    print(to_local_path(os.getcwd() + '/' + '../a/b'))  # ../a/b
-    print(to_local_path(os.getcwd() + '/' + 'c/d'))  # c/d
-    print(to_local_path(os.getcwd() + '/' + '.'))  # .
-    print(to_local_path(os.getcwd() + '/'))  # .
-    print(to_local_path(os.getcwd() + '_diff/a'))  # ../x_diff/a
-    print(to_local_path(parent_path(os.getcwd()) + '/diff/template'))  # ../diff/template

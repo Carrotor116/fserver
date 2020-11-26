@@ -37,10 +37,17 @@ def normalize_url(fun):
     def wrapper(path):
         original_url = to_unicode_str(request.environ['PATH_INFO'])
         n_url = normalize_path(original_url)
-        n_url = n_url + '/' if original_url.endswith('/') else n_url
+
+        if original_url.endswith('/'):
+            n_url += '/'
+
+        if n_url.startswith('..'):
+            warning('attempt to access parent directory: {}'.format(path))
+            return resp_deny(path)
+
         if original_url != n_url:
             re_url = n_url if request.environ['QUERY_STRING'] == '' else '?'.join(
-                [n_url, request.environ['QUERY_STRING']])
+                (n_url, request.environ['QUERY_STRING']))
             return redirect(re_url)
         else:
             return fun(path)
@@ -56,22 +63,22 @@ def do_get(path):
 
     debug('do_get: path %s,' % path, 'arg is', arg.to_dict())
 
-    if path_permission_deny(path):
+    is_dir = os.path.isdir(path)
+
+    if path_permission_deny(path, is_dir):
         warning('permission deny: %s' % path)
-        resp_deny(path)
+        return resp_deny(path)
 
     if path == '' or path == '/':
         return get_root(arg)
 
-    local_path = url_path_to_local_abspath(path)
-
-    if os.path.isdir(local_path):
+    if is_dir:
         if path.endswith('/'):
             return list_dir(path, arg)
         else:
             return redirect('/'.join((path, arg.format_for_url())))
 
-    elif os.path.isfile(local_path):
+    elif os.path.isfile(path):
         if arg.mode == GetArg.MODE_TXT:
             return respond_file(path, mime='text/plain')
         elif arg.mode == GetArg.MODE_DOWN:
@@ -79,7 +86,7 @@ def do_get(path):
         elif arg.mode == GetArg.MODE_VIDEO:
             return play_video(path, arg)
         else:
-            if get_suffix(local_path).lower() in VIDEO_SUFFIX:
+            if get_suffix(path).lower() in VIDEO_SUFFIX:
                 return play_video(path, arg)
             else:
                 return respond_file(path)
@@ -89,15 +96,18 @@ def do_get(path):
 
 @app.route('/', defaults={'path': ''}, methods=['POST'])
 @app.route('/<path:path>', methods=['POST'])
+@normalize_url
 def do_post(path):
     debug('do_post: %s' % path)
 
-    if path_permission_deny(path):
+    is_dir = os.path.isdir(path)
+    if not conf.UPLOAD or not is_dir:
+        return redirect(request.url)
+
+    if path_permission_deny(path, is_dir):
         warning('permission deny: %s' % path)
         return resp_deny(path)
 
-    if not conf.UPLOAD:
-        return redirect(request.url)
     try:
         if 'file' not in request.files:
             warning('do_post: No file in request')
@@ -123,34 +133,34 @@ def get_root(arg):
     if conf.STRING is not None:
         return render_template('string.html', content=conf.STRING)
     else:
-        return list_dir('.', arg)
+        return list_dir('./', arg)
 
 
 def list_dir(path, arg):
     debug('list_dir:', path)
     local_path = url_path_to_local_abspath(path)
-    if os.path.isdir(local_path):
-        if not path.endswith('/'):
-            path = path + '/'
-        lst = []
-        for entry in listdir(local_path):
-            f = entry.name
-            if path_permission_deny(path + f):
-                continue
-            if entry.is_dir():
-                f += '/'
-            lst.append(f)
+    if not os.path.isdir(local_path):
+        return resp_deny(path)
 
-        if local_path != conf.ROOT:
-            lst.append('../')
-        lst.sort()
-        return render_template('list.html',
-                               upload=conf.UPLOAD,
-                               path='/' if path == './' else '/%s' % path,
-                               arg=arg.format_for_url(),
-                               list=lst)
+    if not path.endswith('/'):
+        path += '/'
+    lst = []
+    for entry in listdir(local_path):
+        f = entry.name
+        if path_permission_deny(path + f, entry.is_dir()):
+            continue
+        if entry.is_dir():
+            f += '/'
+        lst.append(f)
 
-    return resp_deny(path)
+    if local_path != conf.ROOT:
+        lst.append('../')
+    lst.sort()
+    return render_template('list.html',
+                           upload=conf.UPLOAD,
+                           path='/' if path == './' else '/%s' % path,
+                           arg=arg.format_for_url(),
+                           list=lst)
 
 
 def respond_file(path, mime=None, as_attachment=False):
@@ -203,8 +213,10 @@ def plus_filename(filename):
     i = 0
     while True:
         i += 1
-        res = '{}({})'.format(prefix, str(i))
-        res = res + '.' + suffix if suffix != '' else res
+        if suffix != '':
+            res = '{}({}).{}'.format(prefix, i, suffix)
+        else:
+            res = '{}({})'.format(prefix, i)
         if not os.path.exists(res):
             return res
 
