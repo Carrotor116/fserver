@@ -89,6 +89,7 @@ def match(tree: PathNode, paths, ix=0, match_dir=False):
 def path_permission_deny(path, is_dir):
     """
     :param path: normalized path
+    :param is_dir:
     :return:     preferred deny
     """
     DENY = True

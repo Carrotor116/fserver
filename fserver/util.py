@@ -82,9 +82,9 @@ def get_ip_v4():
     return ips
 
 
-def is_ip_v4(str):
-    r = re.match(r'((?:(?:25[0-5]|2[0-4]\d|(?:1\d{2}|[1-9]?\d))\.){3}(?:25[0-5]|2[0-4]\d|(?:1\d{2}|[1-9]?\d)))', str)
-    if r is not None and r.span()[1] == len(str):
+def is_ip_v4(string):
+    r = re.match(r'((?:(?:25[0-5]|2[0-4]\d|(?:1\d{2}|[1-9]?\d))\.){3}(?:25[0-5]|2[0-4]\d|(?:1\d{2}|[1-9]?\d)))', string)
+    if r is not None and r.span()[1] == len(string):
         return True
     else:
         return False

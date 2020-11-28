@@ -33,7 +33,7 @@ optional arguments:
   -v, --version         print version info
 ```
 
-### Match Rule
+### Matching Rule
 
 argument for `-a` and `-b` support wildcards "\*" and "\*\*". 
 

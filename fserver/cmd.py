@@ -88,7 +88,7 @@ def run_fserver():
         sys.exit(-1)
 
     if conf.STRING is not None:
-        conf.ALLOW_TREE = permission.build_path_tree([""])
+        conf.ALLOW_TREE = permission.build_path_tree(conf.ROOT, [""])
 
     if conf.DEBUG:
         print(conf.debug_msg(_conf))
