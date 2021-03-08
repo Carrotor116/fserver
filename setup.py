@@ -20,9 +20,11 @@ try:
 except ImportError:
     install_requires.append('scandir >= 1.0.0')
 
+home_page = 'https://github.com/Carrotor116/fserver'
 
 with open('README.md', 'r') as fr:
     long_description = fr.read()
+    long_description.replace('[MIT](LICENSE)', '[MIT]({}/blob/master/LICENSE)'.format(home_page))
 
 setup(
     name='fserver',
@@ -30,7 +32,7 @@ setup(
     description='File Sharing Server implemented with flask and gevent',
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url='https://github.com/Carrotor116/fserver',
+    url=home_page,
     author='Nonu',
     author_email='carrotor116@gmail.com',
     license='MIT',

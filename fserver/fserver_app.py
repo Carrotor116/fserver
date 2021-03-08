@@ -100,6 +100,9 @@ def do_get(path):
 def do_post(path):
     debug('do_post: %s' % path)
 
+    if path == '' or path == '/':
+        path = './'
+
     is_dir = os.path.isdir(path)
     if not conf.UPLOAD or not is_dir:
         return redirect(request.url)
@@ -120,8 +123,9 @@ def do_post(path):
                 if not conf.UPLOAD_OVERRIDE_MODE:
                     local_path = plus_filename(local_path)
             request_file.save(local_path)
-            debug('save file to: %s' % local_path)
-            res = {'operation': 'upload_file', 'state': 'succeed', 'filename': request_file.filename}
+            state = 'succeed' if os.path.exists(local_path) else 'failed'
+            debug('save file to: {}, state: {}'.format(local_path, state))
+            res = {'operation': 'upload_file', 'state': state, 'filename': request_file.filename}
             return jsonify(**res)
 
     except Exception as e:

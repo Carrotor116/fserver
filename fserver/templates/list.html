@@ -438,9 +438,13 @@
         }
 
         function upload_complete() {
-            file_map.get(this.custom_file_key)['state'] = 1;
+            console.log(this.responseText)
+            var obj = JSON.parse(this.responseText);
+            if(obj['state'] === 'succeed')
+                file_map.get(this.custom_file_key)['state'] = 1;
+            else
+                file_map.get(this.custom_file_key)['state'] = -1;
             update_ul();
-            console.log('upload_completed', 'id is', this.custom_file_name);
         }
 
         function upload_error(evt) {
