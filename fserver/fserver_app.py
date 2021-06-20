@@ -190,14 +190,19 @@ def play_video(path, arg):
         return do_get(path)
 
     suffix = get_suffix(path).lower()
-    t = suffix if arg.play is None else arg.play
+    if arg.play is not None:
+        t = arg.play
+    elif suffix in VIDEO_SUFFIX:
+        t = suffix
+    else:
+        t = 'auto'
 
     if t in VIDEO_CDN_JS.keys():
         tj = VIDEO_CDN_JS[t]
         tjs = []
     else:
         tj = ''
-        tjs = VIDEO_CDN_JS.values()
+        tjs = type(_ for _ in VIDEO_CDN_JS.values() if _ != '')
     return render_template('video.html',
                            name=get_filename(path),
                            url='/%s?%s=%s' % (urlencode_filter(path), GetArg.ARG_MODE, GetArg.MODE_DOWN),

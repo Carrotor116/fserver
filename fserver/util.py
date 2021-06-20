@@ -71,7 +71,7 @@ def get_ip_v4():
     if os.name == 'nt':
         ips = _get_ip_v4_ipconfig()
     elif os.name == 'posix':
-        ips = _get_ip_v4_ip_add() | _get_ip_v4_ipconfig()
+        ips = _get_ip_v4_ip_add() | _get_ip_v4_ifconfig()
     else:
         raise RuntimeError('un support os: {}'.format(os.name))
 

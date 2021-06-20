@@ -101,8 +101,10 @@
 <ul id="dir_ul">
     {% for l in list %}
         <li>
-            <span class="li_head"><span name="crl" class="circle"></span> <input class="hide" type="checkbox" name="cb"
-                                                                                 id="{{ l }}"></span>
+            <span class="li_head">
+                <span class="circle"></span>
+                <input class="hide" type="checkbox" name="cb" id="{{ l }}">
+            </span>
             <a href="{{ l|urlencode + arg }}">{{ l }}</a>
         </li>
     {% endfor %}
@@ -110,199 +112,126 @@
 <hr>
 
 <h3 id="mode" class="menu"> mode:
-    <button id="normal_a" class="mode-btn" onclick="changeArg('m', null)">normal</button>
-    <button id="txt_a" class="mode-btn" onclick="changeArg('m', 'txt')">display</button>
-    <button id="down_a" class="mode-btn" onclick="changeArg('m', 'down')">download</button>
-    <button id="play_a" class="mode-btn" onclick="changeArg('m', 'play')">play</button>
+    <button id="btn_normal" class="mode-btn">normal</button>
+    <button id="btn_txt" class="mode-btn">display</button>
+    <button id="btn_down" class="mode-btn">download</button>
+    <button id="btn_play" class="mode-btn">play</button>
 </h3>
 
 <h3 class="menu"> function:
-    <button id="select_btn" class="mode-btn" onclick="select_mode('on')">select_on</button>
-    <button id="batch_down" class="mode-btn" disabled onclick="batch_down()">batch_down</button>
-    <button id="select_all_btn" class="mode-btn" disabled onclick="toggle_select_all()">select all</button>
+    <button id="select_btn" class="mode-btn">select_on</button>
+    <button id="batch_down" class="mode-btn" disabled>batch_down</button>
+    <button id="select_all_btn" class="mode-btn" disabled>select all</button>
 </h3>
 
 
 <script type="text/javascript">
 
-    // for batch down
-    let batch_down_mode = false;
-    let select_all_check_box = 0; // 0: undefined; 1: select_all; -1: cancel_all
-    let mode = '';
+    // init view status
+    let btn_select = document.getElementById('select_btn')
+    let lis = document.getElementsByClassName('li_head')
+    let btns_mode = document.getElementById('mode').children
+    let btn_select_all = document.getElementById('select_all_btn')
+    let btn_batch_down = document.getElementById('batch_down')
+    let links = document.getElementsByTagName('a')
 
-    function download(name, href) {
-        console.log('download: ', href);
-        let a = document.createElement("a"); //创建a标签
-        let e = document.createEvent("MouseEvents"); //创建鼠标事件对象
-        e.initEvent("click", false, false); //初始化事件对象
-        a.href = href; //设置下载地址
-        a.download = name;
-        a.dispatchEvent(e); //给指定的元素，执行事件click事件
+    btn_select.onclick = function () {
+        let select_on = btn_select.innerText === 'select_on'
+        btn_select.innerText = select_on ? 'select_off' : 'select_on'
+        for (let ele of lis) {
+            ele.children[0].setAttribute('class', select_on ? 'hide' : 'circle')
+            ele.children[1].setAttribute('class', select_on ? 'check_box' : 'hide')
+        }
+        btn_batch_down.disabled = !select_on
+        btn_select_all.disabled = !select_on;
+        for (let ele of btns_mode) {
+            ele.disabled = select_on
+        }
+        document.getElementById('btn_' + get_mode()).disabled = true
     }
 
-    function batch_down() {
-        if (!batch_down_mode) return;
-        let url = window.location.href;
-        url = url.split('?')[0];
+    for (let ele of lis) {
+        ele = ele.children[1]
+        if (ele.id === undefined || ele.id === '' || ele.id[ele.id.length - 1] === '/')
+            ele.disabled = true
+    }
+
+    for (let ele of btns_mode) {
+        ele.onclick = function () {
+            let mode_n = ele.id.split('_')[1]
+
+            let url = new URL(window.location.href)
+            url.searchParams.set('mode', mode_n)
+            if (mode_n === 'normal')
+                url.searchParams.delete('mode')
+
+            for (let i of btns_mode)
+                i.disabled = false
+            ele.disabled = true
+            window.history.replaceState('', document.title, url.pathname + url.search);
+
+            let arg = (get_mode() === 'normal') ? '' : ('?mode=' + mode_n)
+            for (let a of links)
+                a.href = a.getAttribute('href').split('?')[0] + arg
+        }
+    }
+
+    let select_all_check_box = 0; // 0: undefined; 1: select_all; -1: cancel_all
+    btn_select_all.onclick = function () {
+        if (select_all_check_box !== 1) {
+            select_all_check_box = 1
+        } else {
+            select_all_check_box = -1
+        }
+        btn_select_all.innerText = select_all_check_box !== 1 ? 'select_all' : 'cancel_all'
+        for (let ele of lis) {
+            ele = ele.children[1]
+            ele.checked = (!ele.disabled) && (select_all_check_box === 1)
+        }
+    }
+
+    // for batch down
+    function download(name, href) {
+        console.log('download: ', href);
+        let a = document.createElement("a");
+        let e = document.createEvent("MouseEvents");
+        e.initEvent("click", false, false);
+        a.href = href;
+        a.download = name;
+        a.dispatchEvent(e);
+        a = undefined
+    }
+
+    btn_batch_down.onclick = function () {
+        let url = window.location.origin + window.location.pathname;
+        url += url.endsWith('/') ? '' : '/'
         let empty = true;
-        document.getElementsByName('cb').forEach(
-            value => {
-                if (value.checked) {
-                    let h = url + '/' + value.id + '?m=down';
-                    download(value.id, h);
-                    empty = false;
-                }
+        for (let ele of lis) {
+            ele = ele.children[1]
+            if (ele.checked) {
+                let h = url + ele.id + '?mode=down';
+                download(ele.id, h);
+                empty = false;
             }
-        );
+        }
         if (empty) {
             alert('please check one at least for download')
         }
-        select_all_check_box = -1;
     }
 
-    function select_mode(mode) {
-        if (mode === 'on') {
-            batch_down_mode = true;
-            document.getElementById('batch_down').disabled = false;
-            document.getElementById('select_all_btn').disabled = false;
-            document.getElementById('normal_a').disabled = true;
-            document.getElementById('txt_a').disabled = true;
-            document.getElementById('down_a').disabled = true;
-            document.getElementById('play_a').disabled = true;
 
-            document.getElementById('select_btn').setAttribute('onclick', "select_mode('off')");
-            document.getElementById('select_btn').innerText = 'select_off';
-            document.getElementsByName('cb').forEach(
-                value => {
-                    if (select_all_check_box === -1) {
-                        value.checked = false;
-                        func_select_all_check_box();
-                    }
-                    if (value.id.lastIndexOf('/') === value.id.length - 1)
-                        value.disabled = true;
-                    value.setAttribute('class', 'check_box')
-                }
-            );
-            document.getElementsByName('crl').forEach(
-                value => {
-                    value.setAttribute('class', 'hide')
-                }
-            )
-        } else {
-            batch_down_mode = false;
-            document.getElementById('batch_down').disabled = true;
-            document.getElementById('select_all_btn').disabled = true;
-            document.getElementById('normal_a').disabled = false;
-            document.getElementById('txt_a').disabled = false;
-            document.getElementById('down_a').disabled = false;
-            document.getElementById('play_a').disabled = false;
-            let mod = get_mode();
-            if (mod !== '')
-                document.getElementById(mod + '_a').disabled = true;
-            else
-                document.getElementById('normal_a').disabled = true;
-
-            document.getElementById('select_btn').setAttribute('onclick', "select_mode('on')");
-            document.getElementById('select_btn').innerText = 'select_on ';
-            document.getElementById('dir_ul').removeAttribute('class');
-            document.getElementsByName('cb').forEach(
-                value => {
-                    value.setAttribute('class', 'hide')
-                }
-            );
-            document.getElementsByName('crl').forEach(
-                value => {
-                    value.setAttribute('class', 'circle')
-                }
-            );
-        }
-    }
-
-    function toggle_select_all() {
-        if (select_all_check_box !== 1) {
-            select_all_check_box = 1;
-        } else if (select_all_check_box !== -1) {
-            select_all_check_box = -1;
-        }
-        func_select_all_check_box();
-    }
-
-    function func_select_all_check_box() {
-        if (select_all_check_box === 1) {
-            document.getElementById('select_all_btn').innerText = 'cancel all';
-        } else if (select_all_check_box === -1) {
-            document.getElementById('select_all_btn').innerText = 'select all';
-        }
-        if (select_all_check_box !== 0)
-            document.getElementsByName('cb').forEach(
-                value => {
-                    if (value.id.charAt(value.id.length - 1) !== '/')
-                        value.checked = (select_all_check_box === 1);
-                }
-            );
-    }
+    let modeSet = new Set(['txt', 'play', 'down', 'normal'])
 
     function get_mode() {
-        let par = location.search;
-        if (par.indexOf("?") !== -1) {
-            par = par.substr(1);
-            let pars = par.split("&");
-            for (let i = 0; i < pars.length; i++) {
-                let par = pars[i];
-                if (par.split('=')[0] === 'm') {
-                    return par.split('=')[1];
-                }
-            }
-        }
-        return '';
+        let url = new URL(window.location.href)
+        let ret = url.searchParams.get("mode")
+        if (ret === null || ret === undefined || ret === '' || !modeSet.has(ret))
+            ret = 'normal'
+        return ret
     }
-
-    // end batch down
 
     // check mode to set link
-    let url = window.location.href;
-    if (url.indexOf('?m=') < 0 && url.indexOf('&m=') < 0) {
-        document.getElementById('normal_a').disabled = true;
-    } else {
-        let mod_value = get_mode();
-        if (mod_value !== '') {
-            let a_elem = document.getElementById(mod_value + '_a');
-            a_elem.disabled = true;
-        }
-    }
-
-    function changeArg(arg, value) {
-        let param = window.location.search;
-        let param_new = '';
-        if (param.indexOf('?' + arg + '=') >= 0 || param.indexOf('&' + arg + '=') >= 0) { // pre_url contain 'm', to modify
-            let pars = param.substr(1).split('&'); // remove '?' and split
-            for (let i = 0; i < pars.length; i++) {
-                if (value !== null) { // to change
-                    if (pars[i].startsWith(arg + '=')) {
-                        param_new += arg + '=' + value + '&';
-                    } else {
-                        param_new += pars[i] + '&';
-                    }
-                } else { // to del
-                    if (!pars[i].startsWith(arg + '=')) {
-                        param_new += pars[i] + '&';
-                    }
-                }
-            }
-            param_new = param_new.substr(0, param_new.length - 1);
-            if (param_new.length !== 0)
-                window.location.search = param_new;
-            else  // remove signal '?'
-                window.location.href = window.location.href.substring(0, window.location.href.lastIndexOf('?'))
-        } else {  // pre_url don't contain 'm', to insert
-            if (value !== null) {
-                param_new = param.replace('?', '') + '&' + arg + '=' + value;
-                if (param_new.charAt(0) === '&')
-                    param_new = param_new.substring(1);
-                window.location.search = param_new;
-            }
-        }
-    }
+    document.getElementById('btn_' + get_mode()).disabled = true
 </script>
 
 {% if upload %}
@@ -440,7 +369,7 @@
         function upload_complete() {
             console.log(this.responseText)
             var obj = JSON.parse(this.responseText);
-            if(obj['state'] === 'succeed')
+            if (obj['state'] === 'succeed')
                 file_map.get(this.custom_file_key)['state'] = 1;
             else
                 file_map.get(this.custom_file_key)['state'] = -1;

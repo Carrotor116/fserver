@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
 class GetArg(object):
-    ARG_MODE = 'm'
-    ARG_PLAY = 'p'
+    ARG_MODE = 'mode'
+    ARG_PLAY = 'play_type'
 
     MODE_NORMAL = 'normal'
     MODE_TXT = 'txt'
