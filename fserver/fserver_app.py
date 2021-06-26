@@ -79,7 +79,9 @@ def do_get(path):
             return redirect('/'.join((path, arg.format_for_url())))
 
     elif os.path.isfile(path):
-        if arg.mode == GetArg.MODE_TXT:
+        if is_curl_or_wget():
+            return respond_file(path)
+        elif arg.mode == GetArg.MODE_TXT:
             return respond_file(path, mime='text/plain')
         elif arg.mode == GetArg.MODE_DOWN:
             return respond_file(path, as_attachment=True)
@@ -91,7 +93,7 @@ def do_get(path):
             else:
                 return respond_file(path)
 
-    return render_template('error.html', error='Invalid url: %s' % path)
+    return resp_deny(path)
 
 
 @app.route('/', defaults={'path': ''}, methods=['POST'])
@@ -135,6 +137,8 @@ def do_post(path):
 
 def get_root(arg):
     if conf.STRING is not None:
+        if is_curl_or_wget():
+            return conf.STRING
         return render_template('string.html', content=conf.STRING)
     else:
         return list_dir('./', arg)
@@ -160,6 +164,9 @@ def list_dir(path, arg):
     if local_path != conf.ROOT:
         lst.append('../')
     lst.sort()
+    if is_curl_or_wget():
+        lst.append('')
+        return '\n'.join(lst)
     return render_template('list.html',
                            upload=conf.UPLOAD,
                            path='/' if path == './' else '/%s' % path,
@@ -176,7 +183,7 @@ def respond_file(path, mime=None, as_attachment=False):
         mime = mimetypes.guess_type(local_path)[0]
         if mime is None:  # use text/plain as default
             mime = 'text/plain'
-    if mime in ['text/html', '']:
+    if mime in ('text/html', ''):
         mime = 'text/plain'
     return send_from_directory(parent_path(local_path),
                                get_filename(local_path),
@@ -199,10 +206,10 @@ def play_video(path, arg):
 
     if t in VIDEO_CDN_JS.keys():
         tj = VIDEO_CDN_JS[t]
-        tjs = []
+        tjs = tuple()
     else:
         tj = ''
-        tjs = type(_ for _ in VIDEO_CDN_JS.values() if _ != '')
+        tjs = tuple(_ for _ in VIDEO_CDN_JS.values() if _ != '')
     return render_template('video.html',
                            name=get_filename(path),
                            url='/%s?%s=%s' % (urlencode_filter(path), GetArg.ARG_MODE, GetArg.MODE_DOWN),
@@ -212,6 +219,8 @@ def play_video(path, arg):
 
 
 def resp_deny(path):
+    if is_curl_or_wget():
+        return 'Invalid url: {}\n'.format(path)
     return render_template('error.html', error='Invalid url: %s' % path)
 
 
@@ -228,6 +237,12 @@ def plus_filename(filename):
             res = '{}({})'.format(prefix, i)
         if not os.path.exists(res):
             return res
+
+
+def is_curl_or_wget():
+    ag = request.headers.get('User-Agent')
+    ag = ag.lower().split('/')[0]
+    return ag in ('curl', 'wget')
 
 
 @app.template_filter('urlencode')
