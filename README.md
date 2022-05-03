@@ -13,8 +13,8 @@ $ pip install fserver -U
 ### Usage 
 
 ```text
-usage: fserver [-h] [-d] [-u] [-o] [-i IP] [-p PORT] [-r PATH]
-               [-a PATH [PATH ...]] [-b PATH [PATH ...]] [-s STRING]
+usage: fserver [-h] [-d] [-u] [-o] [-i IP] [-p PORT] [-r PATH] [-a PATH [PATH ...]] [-b PATH [PATH ...]] [-s STRING]
+               [-v] [-g] [--git_path GIT_PATH] [--username USERNAME] [--password PASSWORD]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -31,6 +31,10 @@ optional arguments:
   -s STRING, --string STRING
                         share string only
   -v, --version         print version info
+  -g, --git             open git http service for project in root
+  --git_path GIT_PATH   path for git executable file
+  --username USERNAME   username for git authentication
+  --password PASSWORD   password for git authentication
 ```
 
 ### Matching Rule

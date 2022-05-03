@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
+import random
 
-VERSION = '0.1.7'
-BUILD_TIME = '2021/06/26'
+VERSION = '0.1.8'
+BUILD_TIME = '2022/05/03'
 
 DEBUG = False
 UPLOAD_OVERRIDE_MODE = False
@@ -22,6 +23,13 @@ VIDEO_CDN_JS = {
 
 ALLOW_TREE = None
 BLOCK_TREE = None
+
+PROJECTS_PATH = ''
+GIT_REPOS_PATH = ''
+GIT_PATH = ''
+GIT_SERVICE = False
+USER_NAME = 'admin'
+PASSWORD = ''.join([chr(random.randint(33, 126)) for _ in range(16)])
 
 
 def debug_msg(args):

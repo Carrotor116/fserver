@@ -36,7 +36,14 @@ def args():
                         help='share string only')
     parser.add_argument('-v', '--version', action='store_true',
                         help='print version info')
-
+    parser.add_argument('-g', '--git', action='store_true',
+                        help='open git http service for project in root')
+    parser.add_argument('--git_path', default='',
+                        help='path for git executable file')
+    parser.add_argument('--username', default=conf.USER_NAME,
+                        help='username for git authentication')
+    parser.add_argument('--password', default=conf.PASSWORD,
+                        help='password for git authentication')
     return parser
 
 
@@ -56,6 +63,26 @@ def run_fserver():
     conf.BIND_PORT = _conf.port
     conf.STRING = _conf.string
     conf.ROOT = path_util.normalize_path(os.path.abspath(_conf.root))
+    conf.GIT_SERVICE = _conf.git
+    conf.GIT_REPOS_PATH = conf.ROOT
+    conf.PROJECTS_PATH = conf.ROOT
+    conf.GIT_PATH = _conf.git_path
+    conf.USER_NAME = _conf.username
+    conf.PASSWORD = _conf.password
+
+    if conf.GIT_SERVICE and conf.GIT_PATH == '':
+        cmd = None
+        if os.name == 'nt':
+            cmd = 'where git'
+        elif os.name == 'posix':
+            cmd = 'which git'
+        if cmd is not None:
+            conf.GIT_PATH = [_ for _ in os.popen(cmd).read().split('\n') if len(_) > 0][0]
+    if conf.GIT_SERVICE and not os.path.isfile(conf.GIT_PATH):
+        print('[WARN] invalid git path: {}'.format(conf.GIT_PATH))
+        conf.GIT_SERVICE = False
+    if conf.GIT_SERVICE and ' ' in conf.GIT_PATH:
+        conf.GIT_PATH = '"{}"'.format(conf.GIT_PATH)
 
     trees = []
     lsts = []
@@ -98,6 +125,9 @@ def run_fserver():
         print('\n'.join('  http://%s:%s' % (_ip, conf.BIND_PORT) for _ip in util.get_ip_v4()))
     else:
         print('  http://%s:%s' % (conf.BIND_IP, conf.BIND_PORT))
+    if conf.GIT_SERVICE:
+        print('[INFO] authentication for git:')
+        print('[INFO] username: {}\n[INFO] password: {}'.format(conf.USER_NAME, conf.PASSWORD))
 
     gevent.signal_handler(signal.SIGINT, _quit)
     gevent.signal_handler(signal.SIGTERM, _quit)
