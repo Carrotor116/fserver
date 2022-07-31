@@ -14,7 +14,7 @@ if conf.DEBUG:
     print('debug mode is open by default')
     sys.exit(-1)
 
-install_requires = ['Flask >= 1.1.2', 'gevent >= 20.6.2']
+install_requires = ['Flask >= 1.1.2', 'Flask-HTTPAuth >= 4.6.0', 'gevent >= 20.6.2']
 try:
     from os import scandir
 except ImportError:
