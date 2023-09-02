@@ -31,7 +31,7 @@ optional arguments:
   -s STRING, --string STRING
                         share string only
   -v, --version         print version info
-  -g, --git             open git http service for project in root
+  -g, --git             open git http service for projections in root
   --git_path GIT_PATH   path for git executable file
   --username USERNAME   username for git authentication
   --password PASSWORD   password for git authentication

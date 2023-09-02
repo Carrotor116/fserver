@@ -37,7 +37,7 @@ def args():
     parser.add_argument('-v', '--version', action='store_true',
                         help='print version info')
     parser.add_argument('-g', '--git', action='store_true',
-                        help='open git http service for project in root')
+                        help='open git http service for projections in root')
     parser.add_argument('--git_path', default='',
                         help='path for git executable file')
     parser.add_argument('--username', default=conf.USER_NAME,
