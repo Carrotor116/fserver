@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 # ref: https://github.com/qhzhyt/http-git-server/blob/master/git.py
 import os
 import subprocess

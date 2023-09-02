@@ -11,7 +11,7 @@ from fserver import conf
 from fserver import path_util
 from fserver import permission
 from fserver import util
-from fserver.fserver_app import app as application
+from fserver.app import app as application
 
 
 def args():
