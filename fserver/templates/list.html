@@ -337,6 +337,8 @@
                 alert('All files have uploaded, Please select some file to upload.');
                 return;
             }
+
+            let url = window.location.href;
             for (let pair of file_map) {
                 let f = pair[1];
                 if (is_empty(f) || f['state'] === 1) continue;
