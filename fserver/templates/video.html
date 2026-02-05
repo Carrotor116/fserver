@@ -4,8 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, user-scalable=yes, initial-scale=1.0, minimum-scale=1.0"/>
     <title>{{ name }}</title>
+    <link rel="stylesheet" href="/static/plyr.min.css"/>
     <style>
+        * {
+            box-sizing: border-box;
+        }
+
         body {
+            margin: 0;
+            padding: 24px 16px 32px;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+            background: #f5f7fb;
+            color: #1f2933;
             text-rendering: auto;
         }
 
@@ -13,52 +23,216 @@
             z-index: -1 !important;
         }
 
+        .page {
+            max-width: 960px;
+            margin: 0 auto;
+        }
+
+        h2 {
+            margin: 0 0 8px;
+            font-size: 22px;
+            font-weight: 600;
+            color: #111827;
+        }
+
+        .card {
+            background: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+            padding: 16px 18px 22px;
+            margin-top: 18px;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .card-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: #374151;
+        }
+
         .dplayer-wrap {
-            max-width: 600px;
-            min-height: 340px;
+            max-width: 640px;
+            min-height: 360px;
             margin: 0 auto;
         }
 
         .tselect {
+            margin-top: 16px;
+            text-align: right;
+        }
+
+        .video-select {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: #4b5563;
+        }
+
+        .video-select select {
+            padding: 4px 8px;
+            border-radius: 6px;
+            border: 1px solid #d1d5db;
+            font-size: 13px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #6366f1, #4f46e5);
+            border: none;
+            color: #ffffff;
+            padding: 6px 14px;
             text-align: center;
-            margin: 45px auto;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            border-radius: 999px;
+            outline: none;
+            cursor: pointer;
+            box-shadow: 0 8px 18px rgba(79, 70, 229, 0.25);
+            transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease, opacity 0.12s ease;
+            white-space: nowrap;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 14px 30px rgba(79, 70, 229, 0.35);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+            box-shadow: 0 8px 18px rgba(79, 70, 229, 0.25);
+        }
+
+        @media (max-width: 640px) {
+            .card {
+                padding: 14px 12px 18px;
+            }
+
+            .dplayer-wrap {
+                max-width: 100%;
+                min-height: 260px;
+            }
         }
     </style>
 </head>
 <body>
-<div class="dplayer-wrap ">
-    <div id="dplayer"></div>
-</div>
-<div class="tselect">
-    <label for="typeSelect"></label>
-    <select id="typeSelect" name="typeSelect">
-        <option value="mp4">mp4</option>
-        <option value="flv">flv</option>
-        <option value="hls">hls</option>
-        <option value="dash">dash</option>
-        <option value="auto">auto</option>
-    </select>
-    <button onclick="changeType()">change type</button>
+<div class="page">
+    <h2>{{ name }}</h2>
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">视频预览</div>
+        </div>
+        <div class="dplayer-wrap ">
+            <video id="player" playsinline controls>
+                {% if type == 'mp4' %}
+                    <source src="{{ url }}" type="video/mp4">
+                {% elif type == 'hls' %}
+                    <source src="{{ url }}" type="application/x-mpegURL">
+                {% elif type == 'dash' %}
+                    <source src="{{ url }}" type="application/dash+xml">
+                {% elif type == 'flv' %}
+                    <source src="{{ url }}" type="video/x-flv">
+                {% else %}
+                    <source src="{{ url }}">
+                {% endif %}
+                Your browser does not support HTML5 video.
+            </video>
+        </div>
+        <div class="tselect">
+            <div class="video-select">
+                <label for="typeSelect">播放类型：</label>
+                <select id="typeSelect" name="typeSelect">
+                    <option value="mp4">mp4</option>
+                    <option value="flv">flv</option>
+                    <option value="hls">hls</option>
+                    <option value="dash">dash</option>
+                    <option value="auto">auto</option>
+                </select>
+                <button class="btn-primary" onclick="changeType()">切换类型</button>
+            </div>
+        </div>
+    </div>
 </div>
 {% for j in typejss %}
     <script src="{{ j }}"></script>
 {% endfor %}
 <script src="{{ typejs }}"></script>
-<script src="/static/DPlayer.min.js"></script>
+<script src="/static/plyr.polyfilled.min.js"></script>
 <script type="text/javascript">
 
+    // 初始化下拉框默认选中项
     for (let o of document.getElementById('typeSelect').options)
         if (o.value === '{{ type }}')
             o.selected = true
 
-    const dp = new DPlayer({
-        container: document.getElementById('dplayer'),
-        screenshot: false,
-        video: {
-            url: '{{ url }}',
-            type: '{{ type }}'
-        }
+    // 使用 Plyr 初始化播放器
+    const plyrPlayer = new Plyr('#player', {
+        controls: [
+            'play-large',
+            'play',
+            'progress',
+            'current-time',
+            'duration',
+            'mute',
+            'volume',
+            'settings',
+            'fullscreen'
+        ],
+        ratio: '16:9',
+        autoplay: false
     });
+
+    // 长按加速播放：按住视频区域（鼠标左键或触摸）时临时加速，松开恢复原倍速
+    (function setupPressToSpeedUp(player) {
+        if (!player) return;
+
+        const FAST_SPEED = 2.0; // 加速倍速
+        let originalSpeed = 1.0;
+        let pressing = false;
+
+        function startFast() {
+            if (pressing) return;
+            pressing = true;
+            // 记录当前倍速（如果后续支持手动调速，可以恢复到原本设置）
+            originalSpeed = player.speed || (player.media && player.media.playbackRate) || 1.0;
+            player.speed = FAST_SPEED;
+        }
+
+        function stopFast() {
+            if (!pressing) return;
+            pressing = false;
+            player.speed = originalSpeed || 1.0;
+        }
+
+        // 优先绑定在 Plyr 的 video wrapper 上，保证点击控件区域也能触发
+        const container = player.elements && player.elements.container;
+        const target = container ? container.querySelector('.plyr__video-wrapper') : document.getElementById('player');
+        if (!target) return;
+
+        // 鼠标事件（仅左键）
+        target.addEventListener('mousedown', function (e) {
+            if (e.button !== 0) return;
+            startFast();
+        });
+        window.addEventListener('mouseup', stopFast);
+        target.addEventListener('mouseleave', stopFast);
+
+        // 触摸事件（移动端）
+        target.addEventListener('touchstart', function () {
+            startFast();
+        });
+        window.addEventListener('touchend', stopFast);
+        window.addEventListener('touchcancel', stopFast);
+    })(plyrPlayer);
 
     function changeType() {
         let tSelect = document.getElementById('typeSelect');

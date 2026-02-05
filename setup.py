@@ -24,7 +24,7 @@ home_page = 'https://github.com/Carrotor116/fserver'
 
 with open('README.md', 'r') as fr:
     long_description = fr.read()
-    long_description.replace('[MIT](LICENSE)', '[MIT]({}/blob/master/LICENSE)'.format(home_page))
+    long_description = long_description.replace('[MIT](LICENSE)', '[MIT]({}/blob/master/LICENSE)'.format(home_page))
 
 setup(
     name='fserver',

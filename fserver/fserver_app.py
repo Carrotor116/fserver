@@ -237,7 +237,7 @@ def plus_filename(filename):
 
 
 def is_curl_or_wget():
-    ag = request.headers.get('User-Agent')
+    ag = request.headers.get('User-Agent') or ''
     ag = ag.lower().split('/')[0]
     return ag in ('curl', 'wget')
 

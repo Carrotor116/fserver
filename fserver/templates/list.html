@@ -3,54 +3,205 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, user-scalable=yes, initial-scale=1.0, minimum-scale=1.0"/>
-    <title>dir</title>
+    <title>Directory - {{ path }}</title>
     <style>
-        .mode-btn {
-            background-color: #8585ff;
+        /* 全局样式与布局 */
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 24px 16px 32px;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+            background: #f5f7fb;
+            color: #1f2933;
+        }
+
+        .page {
+            max-width: 960px;
+            margin: 0 auto;
+        }
+
+        h2 {
+            margin: 0 0 8px;
+            font-size: 22px;
+            font-weight: 600;
+            color: #111827;
+        }
+
+        .sub-path {
+            font-size: 13px;
+            color: #6b7280;
+            word-break: break-all;
+        }
+
+        .card {
+            background: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+            padding: 16px 18px;
+            margin-top: 18px;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .card-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: #374151;
+        }
+
+        hr {
             border: none;
-            color: white;
-            padding: 10px 15px;
+            border-top: 1px solid #e5e7eb;
+            margin: 16px -18px;
+        }
+
+        a {
+            color: #2563eb;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        /* 顶部按钮样式（模式 & 功能） */
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px 12px;
+            align-items: center;
+            margin-top: 12px;
+        }
+
+        .toolbar-label {
+            font-size: 14px;
+            font-weight: 500;
+            color: #4b5563;
+            margin-right: 4px;
+        }
+
+        .mode-btn {
+            background: linear-gradient(135deg, #6366f1, #4f46e5);
+            border: none;
+            color: #ffffff;
+            padding: 8px 14px;
             text-align: center;
-            display: inline-block;
-            font-size: 16px;
-            font-weight: bold;
-            margin-left: 6px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            border-radius: 999px;
+            margin-left: 0;
             outline: none;
+            cursor: pointer;
+            box-shadow: 0 8px 18px rgba(79, 70, 229, 0.25);
+            transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease, opacity 0.12s ease;
+            white-space: nowrap;
+        }
+
+        .mode-btn:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 14px 30px rgba(79, 70, 229, 0.35);
+        }
+
+        .mode-btn:active:not(:disabled) {
+            transform: translateY(0);
+            box-shadow: 0 8px 18px rgba(79, 70, 229, 0.25);
         }
 
         .mode-btn:disabled {
-            background-color: rgba(133, 133, 255, 0.36);
+            opacity: 0.8;
+            cursor: default;
+        }
+
+        .mode-btn.secondary {
+            background: #f3f4ff;
+            color: #4f46e5;
+            box-shadow: none;
+        }
+
+        .mode-btn.secondary:hover:not(:disabled) {
+            background: #e0e7ff;
+            box-shadow: 0 6px 14px rgba(79, 70, 229, 0.15);
+        }
+
+        /* secondary 按钮通用禁用态（灰色），包括 batch_down、select all 等 */
+        .mode-btn.secondary:disabled {
+            background: #e5e7eb;
+            color: #9ca3af;
+            box-shadow: none;
+        }
+
+        /* 当前激活的 mode 按钮（通过 disabled 表示当前模式） */
+        #mode .mode-btn.secondary:disabled {
+            background: linear-gradient(135deg, #6366f1, #4f46e5);
+            color: #ffffff;
+            box-shadow: 0 8px 18px rgba(79, 70, 229, 0.25);
+        }
+
+        /* 处于 select 模式时，mode 区按钮统一灰色禁用态，与其他 secondary disabled 状态保持一致 */
+        body.select-mode #mode .mode-btn.secondary:disabled {
+            background: #e5e7eb;
+            color: #9ca3af;
+            box-shadow: none;
+        }
+
+        .mode-btn-icon {
+            font-size: 14px;
         }
 
         {% if upload %}
-            .file {
-                position: relative;
-                display: inline-block;
-                background: #78b6ff;
-                border-radius: 2px;
-                padding: 8px 12px;
-                overflow: hidden;
-                color: white;
-                text-decoration: none;
-                text-indent: 0;
-            }
-            .file input {
-                position: absolute;
-                font-size: 16px;
-                right: 0;
-                font-weight: bold;
-                top: 0;
-                bottom: 0;
-                left: 0;
-                opacity: 0;
-            }
+        .file {
+            position: relative;
+            display: inline-block;
+            background: #0ea5e9;
+            border-radius: 999px;
+            padding: 9px 16px;
+            overflow: hidden;
+            color: #ffffff;
+            text-decoration: none;
+            text-indent: 0;
+            font-size: 13px;
+            font-weight: 500;
+            box-shadow: 0 8px 18px rgba(14, 165, 233, 0.25);
+            cursor: pointer;
+            transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+        }
+
+        .file:hover {
+            background: #0284c7;
+            box-shadow: 0 12px 26px rgba(14, 165, 233, 0.35);
+            transform: translateY(-1px);
+        }
+
+        .file input {
+            position: absolute;
+            font-size: 16px;
+            right: 0;
+            font-weight: bold;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
         {% endif %}
 
-        ul {
-            margin-left: 20px;
-            margin-right: 4px;
-            padding-left: 0;
-            padding-right: 0;
+        /* 列表样式 */
+        #dir_ul {
+            margin: 0;
+            padding: 0;
+            list-style: none;
         }
 
         .hide {
@@ -58,71 +209,140 @@
         }
 
         .check_box {
-            height: 13px;
-            width: 13px;
-            margin-top: 0;
-            margin-bottom: 0;
-            padding-top: 0;
-            padding-bottom: 0;
+            height: 14px;
+            width: 14px;
+            margin: 0;
+            padding: 0;
             display: inline-block;
+            cursor: pointer;
         }
 
         li {
-            min-height: 21px;
+            min-height: 32px;
             list-style-type: none;
             white-space: nowrap;
+            display: flex;
+            align-items: center;
+            padding: 6px 10px;
+            border-radius: 6px;
+            transition: background 0.12s ease, transform 0.08s ease;
+        }
+
+        li:nth-child(2n) {
+            background-color: #f9fafb;
+        }
+
+        li:hover {
+            background-color: #eef2ff;
+            transform: translateX(1px);
         }
 
         .menu {
             white-space: nowrap;
+            margin: 0;
         }
 
         .li_head {
-            width: 20px;
-            height: 20px;
-            display: inline-block;
+            width: 32px;
+            height: 24px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
             position: relative;
             text-align: center;
+            margin-right: 4px;
         }
 
         .circle {
-            width: 5px;
-            height: 5px;
-            border-radius: 50%;
-            background-color: black;
-            display: inline-block;
-            margin-bottom: 3px;
+            display: none;
+        }
+
+        .file-name {
+            font-size: 14px;
+            color: #111827;
+        }
+
+        /* 上传列表样式 */
+        #file_ul {
+            list-style: none;
+            padding-left: 0;
+            margin: 8px 0 0;
+        }
+
+        #file_ul li {
+            background: #f9fafb;
+            border-radius: 6px;
+            padding: 6px 10px;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            font-size: 13px;
+        }
+
+        #file_ul a {
+            margin-right: 10px;
+        }
+
+        #file_ul span {
+            font-size: 13px;
+        }
+
+        .upload-tip {
+            font-size: 12px;
+            color: #9ca3af;
+            margin-top: 4px;
+        }
+
+        @media (max-width: 640px) {
+            .card {
+                padding: 14px 12px;
+            }
+
+            .toolbar {
+                flex-direction: column;
+                align-items: flex-start;
+            }
         }
     </style>
 </head>
 <body>
-<h2>Directory listing for {{ path }}</h2>
-<hr>
-<ul id="dir_ul">
+<div class="page">
+    <h2>Directory listing</h2>
+    <div class="sub-path">{{ path }}</div>
+
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">Files & Folders</div>
+        </div>
+        <ul id="dir_ul">
     {% for l in list %}
         <li>
             <span class="li_head">
                 <span class="circle"></span>
                 <input class="hide" type="checkbox" name="cb" id="{{ l }}">
             </span>
-            <a href="{{ l|urlencode + arg }}">{{ l }}</a>
+            <a class="file-name" href="{{ l|urlencode + arg }}">{{ l }}</a>
         </li>
     {% endfor %}
 </ul>
-<hr>
+    </div>
 
-<h3 id="mode" class="menu"> mode:
-    <button id="btn_normal" class="mode-btn">normal</button>
-    <button id="btn_txt" class="mode-btn">display</button>
-    <button id="btn_down" class="mode-btn">download</button>
-    <button id="btn_play" class="mode-btn">play</button>
-</h3>
+    <div class="card">
+        <div class="toolbar" id="mode">
+            <span class="toolbar-label">mode</span>
+            <button id="btn_normal" class="mode-btn secondary"><span class="mode-btn-icon">●</span>normal</button>
+            <button id="btn_txt" class="mode-btn secondary"><span class="mode-btn-icon">𝙏</span>display</button>
+            <button id="btn_down" class="mode-btn secondary"><span class="mode-btn-icon">⬇</span>download</button>
+            <button id="btn_play" class="mode-btn secondary"><span class="mode-btn-icon">▶</span>play</button>
+        </div>
 
-<h3 class="menu"> function:
-    <button id="select_btn" class="mode-btn">select_on</button>
-    <button id="batch_down" class="mode-btn" disabled>batch_down</button>
-    <button id="select_all_btn" class="mode-btn" disabled>select all</button>
-</h3>
+        <div class="toolbar" style="margin-top: 10px;">
+            <span class="toolbar-label">function</span>
+            <button id="select_btn" class="mode-btn">select_on</button>
+            <button id="batch_down" class="mode-btn secondary" disabled>batch_down</button>
+            <button id="select_all_btn" class="mode-btn secondary" disabled>select all</button>
+        </div>
+    </div>
 
 
 <script type="text/javascript">
@@ -147,13 +367,68 @@
         for (let ele of btns_mode) {
             ele.disabled = select_on
         }
+        // 更新 mode 激活按钮状态
         document.getElementById('btn_' + get_mode()).disabled = true
+        // 为 body 添加 / 移除 select 模式标记，用于样式区分
+        if (select_on) {
+            document.body.classList.add('select-mode')
+        } else {
+            document.body.classList.remove('select-mode')
+        }
     }
 
     for (let ele of lis) {
         ele = ele.children[1]
         if (ele.id === undefined || ele.id === '' || ele.id[ele.id.length - 1] === '/')
             ele.disabled = true
+    }
+
+    // 在 select 模式下，点击整条文件名区域（包含文件名）也能勾选 / 取消勾选
+    let dirItems = document.querySelectorAll('#dir_ul li')
+
+    function isSelectModeOn() {
+        // select_on -> 进入选择模式后文字会变成 select_off
+        return btn_select.innerText === 'select_off'
+    }
+
+    for (let li of dirItems) {
+        let checkbox = li.querySelector('input[name="cb"]')
+        let link = li.querySelector('a.file-name')
+        if (!checkbox) continue
+
+        // 整行点击（除真正点击 checkbox 外），在 select 模式下切换勾选
+        li.addEventListener('click', function (e) {
+            if (e.target && e.target.tagName.toLowerCase() === 'input') {
+                return
+            }
+            if (!isSelectModeOn()) {
+                return
+            }
+            if (checkbox.disabled) {
+                return
+            }
+            e.preventDefault()
+            e.stopPropagation()
+            checkbox.checked = !checkbox.checked
+        }, false)
+
+        // 文件名点击在 select 模式下同样只切换勾选，不跳转
+        if (link) {
+            link.addEventListener('click', function (e) {
+                if (!isSelectModeOn()) {
+                    // 非 select 模式，正常跳转
+                    return
+                }
+                // select 模式下，无论是文件还是目录，都不跳转
+                e.preventDefault()
+                e.stopPropagation()
+                // 仅对可用的 checkbox 做选中切换（目录的 checkbox 是 disabled，不会被切换）
+                if (checkbox.disabled) {
+                    return
+                }
+                checkbox.checked = !checkbox.checked
+            }, false)
+        }
     }
 
     for (let ele of btns_mode) {
@@ -235,12 +510,20 @@
 </script>
 
 {% if upload %}
-    <div style="margin-left: 30px; margin-right: 30px">
-        <a href="javascript:void(0);" class="file">选择文件<input type="file" name="file" id="file"
-                                                              multiple="multiple"/></a>
-        <a href="javascript:void(0);" class="file" style="float: right" onclick="upload_file()">上传</a>
-    </div>
-    <div>
+    <div class="card" style="margin-top: 18px;">
+        <div class="card-header">
+            <div class="card-title">Upload files</div>
+        </div>
+        <div style="display:flex; align-items:center; justify-content: space-between; gap:12px; flex-wrap: wrap;">
+            <div>
+                <a href="javascript:void(0);" class="file">
+                    选择文件
+                    <input type="file" name="file" id="file" multiple="multiple"/>
+                </a>
+                <div class="upload-tip">支持多文件上传</div>
+            </div>
+            <a href="javascript:void(0);" class="file" style="background:#22c55e;" onclick="upload_file()">上传</a>
+        </div>
         <ul id="file_ul"></ul>
     </div>
     {#    the js for upload #}
