@@ -226,7 +226,7 @@
     <h2>{{ name }}</h2>
     <div class="card">
         <div class="card-header">
-            <div class="card-title">视频预览</div>
+<!--            <div class="card-title">视频预览</div>-->
         </div>
         <div class="dplayer-wrap">
             <video id="player" playsinline controls>
@@ -374,10 +374,11 @@
             startX: 0,
             startY: 0,
             lastUpdateTime: 0,
-            wasPlayingBeforeSwipe: false,  // 新增：记录滑动前的播放状态
             isFullscreen: false,
             originalParentSpeed: null,
-            originalParentProgress: null
+            originalParentProgress: null,
+            wasPlayingBeforeSwipe: false,
+            wasPlayingBeforeFast: false
         };
 
         // DOM 元素
@@ -499,6 +500,7 @@
 
         function startFast() {
             if (state.isLongPressing) return;
+            if (player.paused) return;
 
             // 检查视频状态
             if (!player.media || player.media.readyState < 2) {
@@ -509,6 +511,7 @@
             state.isLongPressing = true;
             state.originalSpeed = player.speed || 1.0;
             state.fastSpeed = state.originalSpeed * CONFIG.FAST_SPEED_MULTIPLIER;
+            state.wasPlayingBeforeFast = !player.paused;
 
             try {
                 player.speed = state.fastSpeed;
@@ -569,15 +572,12 @@
 
             if (state.isSwiping) {
                 hideProgressIndicator();
-                // 修复：恢复滑动前的播放状态
-                if (state.wasPlayingBeforeSwipe && player.paused) {
-                    player.play().catch(err => console.warn('Failed to resume playback:', err));
-                }
             }
 
             state.isSwiping = false;
             state.hasMoved = false;
             state.wasPlayingBeforeSwipe = false;
+            state.wasPlayingBeforeFast = false;
         }
 
         // ==================== 事件处理器 ====================
@@ -628,7 +628,6 @@
 
                 if (!state.isSwiping) {
                     state.isSwiping = true;
-                    // 修复：记录滑动开始前的播放状态
                     state.wasPlayingBeforeSwipe = !player.paused;
                     // 阻止默认行为以避免与播放器控制冲突
                     e.preventDefault();
@@ -641,10 +640,25 @@
 
         // 鼠标抬起
         function handleMouseUp(e) {
-            // 修复：只在确实进行了手势操作时才阻止默认行为
+            // 只在确实进行了手势操作时才阻止默认行为
             if (state.hasMoved || state.isLongPressing || state.isSwiping) {
                 e.preventDefault();
                 e.stopPropagation();
+            }
+
+            // mouse_up 会导致播放状态切换
+            if (state.isLongPressing) {
+                if (state.wasPlayingBeforeFast)
+                    player.pause();
+                else
+                    player.play();
+            }
+
+            if (state.isSwiping) {
+                if (state.wasPlayingBeforeSwipe)
+                    player.pause();
+                else
+                    player.play();
             }
 
             cleanup();
@@ -693,7 +707,6 @@
 
                 if (!state.isSwiping) {
                     state.isSwiping = true;
-                    // 记录滑动开始前的播放状态
                     state.wasPlayingBeforeSwipe = !player.paused;
                     // 只在滑动时阻止默认行为
                     e.preventDefault();
