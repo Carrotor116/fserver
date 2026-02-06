@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 import random
 
-VERSION = '0.1.10'
-BUILD_TIME = '2023/09/02'
+VERSION = '0.2'
+BUILD_TIME = '2026/02/06'
 
 DEBUG = False
 UPLOAD_OVERRIDE_MODE = False
