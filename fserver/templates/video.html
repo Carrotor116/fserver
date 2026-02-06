@@ -17,6 +17,7 @@
             background: #f5f7fb;
             color: #1f2933;
             text-rendering: auto;
+            -webkit-tap-highlight-color: transparent;
         }
 
         #evanyou-canvas {
@@ -60,6 +61,9 @@
             max-width: 640px;
             min-height: 360px;
             margin: 0 auto;
+            position: relative;
+            transform: translateZ(0);
+            will-change: transform;
         }
 
         .tselect {
@@ -80,6 +84,18 @@
             border-radius: 6px;
             border: 1px solid #d1d5db;
             font-size: 13px;
+            cursor: pointer;
+            transition: border-color 0.2s ease;
+        }
+
+        .video-select select:hover {
+            border-color: #9ca3af;
+        }
+
+        .video-select select:focus {
+            outline: none;
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
         }
 
         .btn-primary {
@@ -112,7 +128,80 @@
             box-shadow: 0 8px 18px rgba(79, 70, 229, 0.25);
         }
 
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: 0 8px 18px rgba(79, 70, 229, 0.15);
+        }
+
+        /* 倍速指示器 */
+        .speed-indicator {
+            position: fixed;
+            top: 16px;
+            left: 16px;
+            background: rgba(0, 0, 0, 0.75);
+            color: #fff;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            z-index: 100;
+            backdrop-filter: blur(4px);
+        }
+
+        .speed-indicator.show {
+            opacity: 1;
+        }
+
+        /* 进度指示器 */
+        .progress-indicator {
+            position: fixed;
+            top: 16px;
+            left: 16px;
+            background: rgba(0, 0, 0, 0.75);
+            color: #fff;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            z-index: 100;
+            backdrop-filter: blur(4px);
+        }
+
+        .progress-indicator.show {
+            opacity: 1;
+        }
+
+        /* 加载状态 */
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 99;
+        }
+
+        .loading-overlay.show {
+            display: flex;
+        }
+
         @media (max-width: 640px) {
+            body {
+                padding: 16px 12px 24px;
+            }
+
             .card {
                 padding: 14px 12px 18px;
             }
@@ -120,6 +209,14 @@
             .dplayer-wrap {
                 max-width: 100%;
                 min-height: 260px;
+            }
+
+            .speed-indicator,
+            .progress-indicator {
+                font-size: 14px;
+                padding: 6px 12px;
+                top: 12px;
+                left: 12px;
             }
         }
     </style>
@@ -131,7 +228,7 @@
         <div class="card-header">
             <div class="card-title">视频预览</div>
         </div>
-        <div class="dplayer-wrap ">
+        <div class="dplayer-wrap">
             <video id="player" playsinline controls>
                 {% if type == 'mp4' %}
                     <source src="{{ url }}" type="video/mp4">
@@ -146,6 +243,11 @@
                 {% endif %}
                 Your browser does not support HTML5 video.
             </video>
+            <div class="speed-indicator" id="speedIndicator" role="status" aria-live="polite">2.0x</div>
+            <div class="progress-indicator" id="progressIndicator" role="status" aria-live="polite">00:00</div>
+            <div class="loading-overlay" id="loadingOverlay">
+                <div style="color: white;">加载中...</div>
+            </div>
         </div>
         <div class="tselect">
             <div class="video-select">
@@ -168,11 +270,69 @@
 <script src="{{ typejs }}"></script>
 <script src="/static/plyr.polyfilled.min.js"></script>
 <script type="text/javascript">
+    'use strict';
+
+    // ==================== 配置常量 ====================
+    const CONFIG = {
+        SWIPE_THRESHOLD: 15,           // 最小滑动距离（像素）
+        LONG_PRESS_DELAY: 200,         // 长按延迟（毫秒）
+        SEEK_STEP: 5,                  // 每次滑动调整的秒数
+        FAST_SPEED_MULTIPLIER: 2.0,    // 加速倍数
+        MOVE_THRESHOLD: 10,            // 移动阈值（像素）
+        INDICATOR_HIDE_DELAY: 500,     // 指示器隐藏延迟
+        SWIPE_SENSITIVITY: 50,         // 滑动灵敏度（像素/步长）
+        THROTTLE_DELAY: 50             // 节流延迟
+    };
+
+    // ==================== 工具函数 ====================
+
+    // 格式化时间显示
+    function formatTime(seconds) {
+        if (!isFinite(seconds) || seconds < 0) return '00:00';
+
+        const h = Math.floor(seconds / 3600);
+        const m = Math.floor((seconds % 3600) / 60);
+        const s = Math.floor(seconds % 60);
+
+        if (h > 0) {
+            return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+        }
+        return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    }
+
+    // 节流函数
+    function throttle(func, limit) {
+        let inThrottle;
+        return function(...args) {
+            const context = this;
+            if (!inThrottle) {
+                func.apply(context, args);
+                inThrottle = true;
+                setTimeout(() => inThrottle = false, limit);
+            }
+        };
+    }
+
+    // 防抖函数
+    function debounce(func, wait) {
+        let timeout;
+        return function(...args) {
+            const context = this;
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func.apply(context, args), wait);
+        };
+    }
+
+    // ==================== 初始化播放器 ====================
 
     // 初始化下拉框默认选中项
-    for (let o of document.getElementById('typeSelect').options)
-        if (o.value === '{{ type }}')
-            o.selected = true
+    const typeSelect = document.getElementById('typeSelect');
+    for (let option of typeSelect.options) {
+        if (option.value === '{{ type }}') {
+            option.selected = true;
+            break;
+        }
+    }
 
     // 使用 Plyr 初始化播放器
     const plyrPlayer = new Plyr('#player', {
@@ -188,59 +348,457 @@
             'fullscreen'
         ],
         ratio: '16:9',
-        autoplay: false
+        autoplay: false,
+        hideControls: true,
+        resetOnEnd: false
     });
 
-    // 长按加速播放：按住视频区域（鼠标左键或触摸）时临时加速，松开恢复原倍速
-    (function setupPressToSpeedUp(player) {
-        if (!player) return;
+    // ==================== 手势控制系统 ====================
 
-        const FAST_SPEED = 2.0; // 加速倍速
-        let originalSpeed = 1.0;
-        let pressing = false;
+    function setupGestureControls(player) {
+        if (!player || !player.media) {
+            console.warn('Player not initialized properly');
+            return;
+        }
+
+        // 状态管理
+        const state = {
+            fastSpeed: CONFIG.FAST_SPEED_MULTIPLIER,
+            originalSpeed: 1.0,
+            isLongPressing: false,
+            isSwiping: false,
+            hasMoved: false,
+            longPressTimer: null,
+            hideSpeedTimeout: null,
+            hideProgressTimeout: null,
+            startX: 0,
+            startY: 0,
+            lastUpdateTime: 0,
+            wasPlayingBeforeSwipe: false,  // 新增：记录滑动前的播放状态
+            isFullscreen: false,
+            originalParentSpeed: null,
+            originalParentProgress: null
+        };
+
+        // DOM 元素
+        const elements = {
+            speedIndicator: document.getElementById('speedIndicator'),
+            progressIndicator: document.getElementById('progressIndicator'),
+            container: player.elements?.container,
+            wrapper: document.querySelector('.dplayer-wrap'),
+            target: null
+        };
+
+        // 获取目标元素
+        elements.target = elements.container
+            ? elements.container.querySelector('.plyr__video-wrapper')
+            : document.getElementById('player');
+
+        if (!elements.target) {
+            console.warn('Target element not found');
+            return;
+        }
+
+        // ==================== 全屏处理 ====================
+
+        function moveIndicatorsToFullscreen() {
+            if (!elements.container || !elements.speedIndicator || !elements.progressIndicator) return;
+
+            // 保存原始父元素
+            if (!state.originalParentSpeed) {
+                state.originalParentSpeed = elements.speedIndicator.parentElement;
+                state.originalParentProgress = elements.progressIndicator.parentElement;
+            }
+
+            // 移动到全屏容器
+            elements.container.appendChild(elements.speedIndicator);
+            elements.container.appendChild(elements.progressIndicator);
+            state.isFullscreen = true;
+            console.log('Indicators moved to fullscreen container');
+        }
+
+        function moveIndicatorsBack() {
+            if (!state.originalParentSpeed || !state.originalParentProgress) return;
+            if (!elements.speedIndicator || !elements.progressIndicator) return;
+
+            // 移回原始位置
+            state.originalParentSpeed.appendChild(elements.speedIndicator);
+            state.originalParentProgress.appendChild(elements.progressIndicator);
+            state.isFullscreen = false;
+            console.log('Indicators moved back to original position');
+        }
+
+        // 监听全屏变化
+        function handleFullscreenChange() {
+            const isFullscreen = !!(
+                document.fullscreenElement ||
+                document.webkitFullscreenElement ||
+                document.mozFullScreenElement ||
+                document.msFullscreenElement
+            );
+
+            if (isFullscreen) {
+                moveIndicatorsToFullscreen();
+            } else {
+                moveIndicatorsBack();
+            }
+        }
+
+        // 绑定全屏事件
+        document.addEventListener('fullscreenchange', handleFullscreenChange);
+        document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+        document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+        document.addEventListener('msfullscreenchange', handleFullscreenChange);
+
+        // Plyr的全屏事件
+        player.on('enterfullscreen', () => {
+            setTimeout(moveIndicatorsToFullscreen, 100);
+        });
+
+        player.on('exitfullscreen', () => {
+            setTimeout(moveIndicatorsBack, 100);
+        });
+
+        // ==================== 指示器控制 ====================
+
+        function showSpeedIndicator() {
+            if (!elements.speedIndicator) return;
+
+            elements.speedIndicator.textContent = `${state.fastSpeed.toFixed(1)}x`;
+            elements.speedIndicator.classList.add('show');
+
+            clearTimeout(state.hideSpeedTimeout);
+        }
+
+        function hideSpeedIndicator() {
+            if (!elements.speedIndicator) return;
+
+            state.hideSpeedTimeout = setTimeout(() => {
+                elements.speedIndicator.classList.remove('show');
+            }, CONFIG.INDICATOR_HIDE_DELAY);
+        }
+
+        function showProgressIndicator(time) {
+            if (!elements.progressIndicator) return;
+
+            elements.progressIndicator.textContent = formatTime(time);
+            elements.progressIndicator.classList.add('show');
+
+            clearTimeout(state.hideProgressTimeout);
+        }
+
+        function hideProgressIndicator() {
+            if (!elements.progressIndicator) return;
+
+            state.hideProgressTimeout = setTimeout(() => {
+                elements.progressIndicator.classList.remove('show');
+            }, CONFIG.INDICATOR_HIDE_DELAY);
+        }
+
+        // ==================== 播放速度控制 ====================
 
         function startFast() {
-            if (pressing) return;
-            pressing = true;
-            // 记录当前倍速（如果后续支持手动调速，可以恢复到原本设置）
-            originalSpeed = player.speed || (player.media && player.media.playbackRate) || 1.0;
-            player.speed = FAST_SPEED;
+            if (state.isLongPressing) return;
+
+            // 检查视频状态
+            if (!player.media || player.media.readyState < 2) {
+                console.warn('Video not ready for speed change');
+                return;
+            }
+
+            state.isLongPressing = true;
+            state.originalSpeed = player.speed || 1.0;
+            state.fastSpeed = state.originalSpeed * CONFIG.FAST_SPEED_MULTIPLIER;
+
+            try {
+                player.speed = state.fastSpeed;
+                showSpeedIndicator();
+            } catch (error) {
+                console.error('Failed to change playback speed:', error);
+                state.isLongPressing = false;
+            }
         }
 
         function stopFast() {
-            if (!pressing) return;
-            pressing = false;
-            player.speed = originalSpeed || 1.0;
+            if (!state.isLongPressing) return;
+
+            state.isLongPressing = false;
+
+            try {
+                player.speed = state.originalSpeed || 1.0;
+                hideSpeedIndicator();
+            } catch (error) {
+                console.error('Failed to restore playback speed:', error);
+            }
         }
 
-        // 优先绑定在 Plyr 的 video wrapper 上，保证点击控件区域也能触发
-        const container = player.elements && player.elements.container;
-        const target = container ? container.querySelector('.plyr__video-wrapper') : document.getElementById('player');
-        if (!target) return;
+        // ==================== 进度控制 ====================
 
-        // 鼠标事件（仅左键）
-        target.addEventListener('mousedown', function (e) {
+        const handleSwipe = throttle(function(deltaX) {
+            if (!player.media) return;
+
+            const currentTime = player.currentTime;
+            const duration = player.duration;
+
+            if (!isFinite(duration) || duration <= 0) return;
+
+            // 根据滑动距离计算时间变化
+            const seekAmount = (deltaX / CONFIG.SWIPE_SENSITIVITY) * CONFIG.SEEK_STEP;
+            let newTime = currentTime + seekAmount;
+
+            // 限制在有效范围内
+            newTime = Math.max(0, Math.min(newTime, duration));
+
+            try {
+                player.currentTime = newTime;
+                showProgressIndicator(newTime);
+            } catch (error) {
+                console.error('Failed to seek:', error);
+            }
+        }, CONFIG.THROTTLE_DELAY);
+
+        // ==================== 状态清理 ====================
+
+        function cleanup() {
+            clearTimeout(state.longPressTimer);
+            state.longPressTimer = null;
+
+            if (state.isLongPressing) {
+                stopFast();
+            }
+
+            if (state.isSwiping) {
+                hideProgressIndicator();
+                // 修复：恢复滑动前的播放状态
+                if (state.wasPlayingBeforeSwipe && player.paused) {
+                    player.play().catch(err => console.warn('Failed to resume playback:', err));
+                }
+            }
+
+            state.isSwiping = false;
+            state.hasMoved = false;
+            state.wasPlayingBeforeSwipe = false;
+        }
+
+        // ==================== 事件处理器 ====================
+
+        // 鼠标按下
+        function handleMouseDown(e) {
             if (e.button !== 0) return;
-            startFast();
-        });
-        window.addEventListener('mouseup', stopFast);
-        target.addEventListener('mouseleave', stopFast);
 
-        // 触摸事件（移动端）
-        target.addEventListener('touchstart', function () {
-            startFast();
-        });
-        window.addEventListener('touchend', stopFast);
-        window.addEventListener('touchcancel', stopFast);
-    })(plyrPlayer);
+            // 修复：不阻止事件传播，让Plyr也能接收到事件
+            // e.stopPropagation(); // 删除这行
+
+            state.startX = e.clientX;
+            state.startY = e.clientY;
+            state.hasMoved = false;
+            state.isSwiping = false;
+
+            // 设置长按定时器
+            state.longPressTimer = setTimeout(() => {
+                if (!state.hasMoved && !state.isSwiping) {
+                    startFast();
+                }
+            }, CONFIG.LONG_PRESS_DELAY);
+        }
+
+        // 鼠标移动
+        function handleMouseMove(e) {
+            if (e.buttons !== 1) return;
+
+            const deltaX = e.clientX - state.startX;
+            const deltaY = e.clientY - state.startY;
+            const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+
+            // 检测移动
+            if (distance > CONFIG.MOVE_THRESHOLD) {
+                state.hasMoved = true;
+                clearTimeout(state.longPressTimer);
+
+                // 如果正在长按加速，停止加速
+                if (state.isLongPressing) {
+                    stopFast();
+                }
+            }
+
+            // 判断是否为水平滑动
+            if (state.hasMoved &&
+                Math.abs(deltaX) > CONFIG.SWIPE_THRESHOLD &&
+                Math.abs(deltaX) > Math.abs(deltaY) * 1.5) {
+
+                if (!state.isSwiping) {
+                    state.isSwiping = true;
+                    // 修复：记录滑动开始前的播放状态
+                    state.wasPlayingBeforeSwipe = !player.paused;
+                    // 阻止默认行为以避免与播放器控制冲突
+                    e.preventDefault();
+                }
+
+                handleSwipe(deltaX);
+                state.startX = e.clientX; // 更新起始位置，实现连续滑动
+            }
+        }
+
+        // 鼠标抬起
+        function handleMouseUp(e) {
+            // 修复：只在确实进行了手势操作时才阻止默认行为
+            if (state.hasMoved || state.isLongPressing || state.isSwiping) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+
+            cleanup();
+        }
+
+        // 触摸开始
+        function handleTouchStart(e) {
+            const touch = e.touches[0];
+            state.startX = touch.clientX;
+            state.startY = touch.clientY;
+            state.hasMoved = false;
+            state.isSwiping = false;
+
+            // 设置长按定时器
+            state.longPressTimer = setTimeout(() => {
+                if (!state.hasMoved && !state.isSwiping) {
+                    startFast();
+                }
+            }, CONFIG.LONG_PRESS_DELAY);
+        }
+
+        // 触摸移动
+        function handleTouchMove(e) {
+            if (e.touches.length !== 1) return;
+
+            const touch = e.touches[0];
+            const deltaX = touch.clientX - state.startX;
+            const deltaY = touch.clientY - state.startY;
+            const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+
+            // 检测移动
+            if (distance > CONFIG.MOVE_THRESHOLD) {
+                state.hasMoved = true;
+                clearTimeout(state.longPressTimer);
+
+                // 如果正在长按加速，停止加速
+                if (state.isLongPressing) {
+                    stopFast();
+                }
+            }
+
+            // 判断是否为水平滑动
+            if (state.hasMoved &&
+                Math.abs(deltaX) > CONFIG.SWIPE_THRESHOLD &&
+                Math.abs(deltaX) > Math.abs(deltaY) * 1.5) {
+
+                if (!state.isSwiping) {
+                    state.isSwiping = true;
+                    // 记录滑动开始前的播放状态
+                    state.wasPlayingBeforeSwipe = !player.paused;
+                    // 只在滑动时阻止默认行为
+                    e.preventDefault();
+                }
+
+                handleSwipe(deltaX);
+                state.startX = touch.clientX; // 更新起始位置
+            }
+        }
+
+        // 触摸结束
+        function handleTouchEnd(e) {
+            // 防止双击缩放
+            if (e.touches.length === 0 && (state.hasMoved || state.isLongPressing || state.isSwiping)) {
+                e.preventDefault();
+            }
+            cleanup();
+        }
+
+        // ==================== 绑定事件 ====================
+
+        // 鼠标事件 - 修复：使用捕获阶段以优先处理
+        elements.target.addEventListener('mousedown', handleMouseDown, true);
+        elements.target.addEventListener('mousemove', handleMouseMove, true);
+        elements.target.addEventListener('mouseup', handleMouseUp, true);
+        elements.target.addEventListener('mouseleave', cleanup, true);
+
+        // 触摸事件
+        elements.target.addEventListener('touchstart', handleTouchStart, { passive: true });
+        elements.target.addEventListener('touchmove', handleTouchMove, { passive: false });
+        elements.target.addEventListener('touchend', handleTouchEnd, { passive: false });
+        elements.target.addEventListener('touchcancel', cleanup, { passive: true });
+
+        // ==================== 清理函数 ====================
+
+        // 页面卸载时清理
+        const cleanupAll = () => {
+            cleanup();
+            clearTimeout(state.hideSpeedTimeout);
+            clearTimeout(state.hideProgressTimeout);
+        };
+
+        window.addEventListener('beforeunload', cleanupAll);
+
+        // 返回清理函数
+        return {
+            destroy: () => {
+                cleanupAll();
+
+                // 移除全屏事件监听
+                document.removeEventListener('fullscreenchange', handleFullscreenChange);
+                document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+                document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
+                document.removeEventListener('msfullscreenchange', handleFullscreenChange);
+
+                // 移除手势事件监听
+                elements.target.removeEventListener('mousedown', handleMouseDown, true);
+                elements.target.removeEventListener('mousemove', handleMouseMove, true);
+                elements.target.removeEventListener('mouseup', handleMouseUp, true);
+                elements.target.removeEventListener('mouseleave', cleanup, true);
+                elements.target.removeEventListener('touchstart', handleTouchStart);
+                elements.target.removeEventListener('touchmove', handleTouchMove);
+                elements.target.removeEventListener('touchend', handleTouchEnd);
+                elements.target.removeEventListener('touchcancel', cleanup);
+                window.removeEventListener('beforeunload', cleanupAll);
+
+                // 恢复指示器位置
+                if (state.isFullscreen) {
+                    moveIndicatorsBack();
+                }
+            }
+        };
+    }
+
+    // ==================== 初始化手势控制 ====================
+
+    let gestureControl = null;
+
+    // 等待播放器准备就绪
+    plyrPlayer.on('ready', () => {
+        console.log('Player ready, initializing gesture controls');
+        gestureControl = setupGestureControls(plyrPlayer);
+    });
+
+    // 错误处理
+    plyrPlayer.on('error', (event) => {
+        console.error('Player error:', event);
+    });
+
+    // ==================== 切换播放类型 ====================
 
     function changeType() {
-        let tSelect = document.getElementById('typeSelect');
-        let val = tSelect.options[tSelect.selectedIndex].value;
-        let ind = window.location.href.indexOf('?');
-        let url = window.location.href.substr(0, ind);
+        const tSelect = document.getElementById('typeSelect');
+        const val = tSelect.options[tSelect.selectedIndex].value;
+        const ind = window.location.href.indexOf('?');
+        const url = ind > 0 ? window.location.href.substr(0, ind) : window.location.href;
         window.location.href = url + '?mode=play&play_type=' + val;
     }
+
+    // ==================== 全局错误处理 ====================
+
+    window.addEventListener('error', (event) => {
+        console.error('Global error:', event.error);
+    });
+
 </script>
 </body>
 </html>
